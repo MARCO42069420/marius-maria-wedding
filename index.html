@@ -738,6 +738,30 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   </div>
 </section>
 
+<!-- ══ SEATING ══ -->
+<section id="seating" style="background:var(--ivory);">
+  <div class="section-inner reveal" style="text-align:center;">
+    <span class="section-eyebrow" data-lang="en">Find Your Seat</span>
+    <span class="section-eyebrow" data-lang="ro">Găsește-ți Locul</span>
+    <h2 class="section-title" data-lang="en">Your Table <em>Awaits</em></h2>
+    <h2 class="section-title" data-lang="ro">Masa Ta Te <em>Așteaptă</em></h2>
+    <p class="section-body" data-lang="en" style="margin:0 auto;">Enter your name to find your table on the day of the wedding.</p>
+    <p class="section-body" data-lang="ro" style="margin:0 auto;">Introdu numele tău pentru a-ți găsi masa în ziua nunții.</p>
+
+    <div class="rsvp-card" style="margin-top:36px;">
+      <form id="seatingForm" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label class="form-label" data-lang="en" for="seatSearchInput">Your name</label>
+          <label class="form-label" data-lang="ro" for="seatSearchInput">Numele tău</label>
+          <input type="text" class="form-input" id="seatSearchInput" placeholder="e.g. Maria Tulgara" autocomplete="off">
+        </div>
+        <button type="submit" class="submit-btn" data-lang="en">Find my table ↗</button>
+        <button type="submit" class="submit-btn" data-lang="ro">Găsește-mi masa ↗</button>
+      </form>
+    </div>
+  </div>
+</section>
+
 <!-- ══ LIBRARY ══ -->
 <section id="library" style="background:var(--ivory);">
   <div class="section-inner" style="max-width:680px;text-align:center;">
