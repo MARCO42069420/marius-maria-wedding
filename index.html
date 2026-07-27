@@ -490,6 +490,7 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#story" onclick="closeDrawer()">Our Story</a>
   <a href="#bigday" onclick="closeDrawer()">The Big Day</a>
   <a href="#rsvp" onclick="closeDrawer()">RSVP</a>
+  <a href="#seating" onclick="closeDrawer()">Find Your Seat</a>
   <a href="#library" onclick="closeDrawer()">Library</a>
   <a href="#stay" onclick="closeDrawer()">Stay &amp; Travel</a>
   <a href="#beauty" onclick="closeDrawer()">Beauty</a>
@@ -512,6 +513,7 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#story"   data-nav-en="Our Story"         data-nav-ro="Povestea">Our Story</a>
   <a href="#bigday"  data-nav-en="The Big Day"       data-nav-ro="Ziua Mare">The Big Day</a>
   <a href="#rsvp"     data-nav-en="RSVP"              data-nav-ro="Confirmare">RSVP</a>
+  <a href="#seating"  data-nav-en="Find Your Seat"    data-nav-ro="Găsește-ți Locul">Find Your Seat</a>
   <a href="#library" data-nav-en="Library"           data-nav-ro="Bibliotecă">Library</a>
   <a href="#stay"    data-nav-en="Stay &amp; Travel" data-nav-ro="Cazare">Stay &amp; Travel</a>
   <a href="#beauty"  data-nav-en="Beauty"            data-nav-ro="Frumusețe">Beauty</a>
@@ -1011,8 +1013,8 @@ function setLang(lang) {
   const ni = document.getElementById('nameInput');
   if (ni) ni.placeholder = lang === 'en' ? 'e.g. Maria Tulgara, Marius Onofrei' : 'ex. Maria Tulgara, Marius Onofrei';
   const labels = {
-    en: ['Home','Our Story','The Big Day','RSVP','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
-    ro: ['Acasă','Povestea Noastră','Ziua Mare','Confirmare','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
+    en: ['Home','Our Story','The Big Day','RSVP','Find Your Seat','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
+    ro: ['Acasă','Povestea Noastră','Ziua Mare','Confirmare','Găsește-ți Locul','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
   };
   document.querySelectorAll('.nav-drawer a').forEach((a, i) => {
     if (labels[lang][i]) a.textContent = labels[lang][i];
