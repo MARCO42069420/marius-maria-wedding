@@ -403,6 +403,13 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 [data-lang]{display:none;}
 [data-lang].active{display:block;}
 
+/* ── SEATING AUTOCOMPLETE ── */
+.seat-suggest-list{flex-direction:column;gap:6px;}
+[data-lang].seat-suggest-list.active{display:flex;}
+.seat-suggest-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:12px 16px;border:1px solid var(--olive-lt);background:rgba(255,255,255,0.7);cursor:pointer;font-family:'Jost',sans-serif;font-size:14px;color:var(--olive-dk);text-align:left;transition:background 0.2s,border-color 0.2s;}
+.seat-suggest-row:hover,.seat-suggest-row:focus{background:var(--olive);color:#fff;border-color:var(--olive);}
+.seat-suggest-table{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;opacity:0.85;}
+
 /* ── LARGE DESKTOP (≥1280px) ── */
 @media(min-width:1280px){
   .hero-content{margin-top:58vh;max-width:700px;}
@@ -749,7 +756,7 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
     <p class="section-body" data-lang="ro" style="margin:0 auto;">Introdu numele tău pentru a-ți găsi masa în ziua nunții.</p>
 
     <div class="rsvp-card" style="margin-top:36px;">
-      <form id="seatingForm" onsubmit="event.preventDefault();">
+      <form id="seatingForm" onsubmit="findSeat(event);">
         <div class="form-group">
           <label class="form-label" data-lang="en" for="seatSearchInput">Your name</label>
           <label class="form-label" data-lang="ro" for="seatSearchInput">Numele tău</label>
@@ -760,10 +767,7 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
       </form>
     </div>
 
-    <div class="seating-wip" style="margin:24px auto 0;max-width:560px;padding:16px 20px;border:1px dashed rgba(107,122,78,0.4);background:rgba(255,255,255,0.55);font-family:'Jost',sans-serif;">
-      <span data-lang="en" style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);font-weight:400;">Feature in progress — seating chart coming soon</span>
-      <span data-lang="ro" style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);font-weight:400;">Funcționalitate în lucru — planul de masă disponibil în curând</span>
-    </div>
+    <div id="seatResult" class="seating-result" style="display:none;margin:24px auto 0;max-width:560px;padding:20px 24px;border:1px solid var(--olive-lt);background:rgba(255,255,255,0.75);font-family:'Jost',sans-serif;text-align:center;"></div>
   </div>
 </section>
 
@@ -1028,6 +1032,137 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 setLang('ro');
+
+// ══ SEATING LOOKUP ══
+const SEAT_GUESTS = [
+  { nom: "Dubois",    prenom: "Camille", numero_table: 1 },
+  { nom: "Martin",    prenom: "Lucas",   numero_table: 2 },
+  { nom: "Lefevre",   prenom: "Emma",    numero_table: 1 },
+  { nom: "Bernard",   prenom: "Hugo",    numero_table: 3 },
+  { nom: "Petit",     prenom: "Léa",     numero_table: 2 },
+  { nom: "Moreau",    prenom: "Nathan",  numero_table: 4 },
+  { nom: "Girard",    prenom: "Chloé",   numero_table: 3 },
+  { nom: "Rousseau",  prenom: "Maxime",  numero_table: 5 },
+  { nom: "Fontaine",  prenom: "Sarah",   numero_table: 4 },
+  { nom: "Chevalier", prenom: "Thomas",  numero_table: 1 },
+  { nom: "Robin",     prenom: "Julie",   numero_table: 5 },
+  { nom: "Simon",     prenom: "Antoine", numero_table: 2 },
+  { nom: "Laurent",   prenom: "Manon",   numero_table: 3 },
+  { nom: "Michel",    prenom: "Louis",   numero_table: 4 },
+  { nom: "Garnier",   prenom: "Inès",    numero_table: 5 },
+  { nom: "Tulgara",   prenom: "Maria",   numero_table: 3 },
+  { nom: "Onofrei",   prenom: "Marius",  numero_table: 3 },
+  { nom: "Ottone",    prenom: "Thomas",  numero_table: 1 },
+  { nom: "",          prenom: "Zuza",    numero_table: 1 },
+];
+
+function normalizeName(s) {
+  return (s || '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function guestDisplayName(g) {
+  return [g.prenom, g.nom].filter(Boolean).join(' ').trim();
+}
+
+function seatFoundHTML(g) {
+  const name = guestDisplayName(g);
+  const t = g.numero_table;
+  return `
+    <span data-lang="en">
+      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);">${name} — your table</span>
+      <strong style="display:block;font-size:48px;line-height:1;color:var(--olive-dk);font-weight:400;margin-top:8px;">${t}</strong>
+    </span>
+    <span data-lang="ro">
+      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);">${name} — masa ta</span>
+      <strong style="display:block;font-size:48px;line-height:1;color:var(--olive-dk);font-weight:400;margin-top:8px;">${t}</strong>
+    </span>`;
+}
+
+function seatMultiHTML(list) {
+  const rows = (word) => list.map(g =>
+    `<div style="margin-top:4px;">${guestDisplayName(g)} — ${word} <strong>${g.numero_table}</strong></div>`
+  ).join('');
+  return `
+    <span data-lang="en" style="font-size:13px;color:var(--olive-dk);"><div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Several matches — please be more specific</div>${rows('Table')}</span>
+    <span data-lang="ro" style="font-size:13px;color:var(--olive-dk);"><div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Mai multe rezultate — te rugăm să fii mai precis</div>${rows('Masa')}</span>`;
+}
+
+function seatNotFoundHTML() {
+  return `
+    <span data-lang="en" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">Name not found — please check the spelling or contact the couple.</span>
+    <span data-lang="ro" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">Nume negăsit — verifică ortografia sau contactează mirii.</span>`;
+}
+
+function seatMatches(value) {
+  const q = normalizeName(value);
+  if (!q) return null;
+  const tokens = q.split(' ');
+  return SEAT_GUESTS.filter(g => {
+    const hay = normalizeName(guestDisplayName(g));
+    return tokens.every(t => hay.includes(t));
+  });
+}
+
+function seatSuggestHTML(list) {
+  const rows = (word) => list.map(g => {
+    const name = guestDisplayName(g);
+    return `<button type="button" class="seat-suggest-row" onclick="pickSeat(this)" data-name="${name}"><span>${name}</span><span class="seat-suggest-table">${word} ${g.numero_table}</span></button>`;
+  }).join('');
+  return `
+    <span data-lang="en" class="seat-suggest-list">${rows('Table')}</span>
+    <span data-lang="ro" class="seat-suggest-list">${rows('Masa')}</span>`;
+}
+
+// Live autocomplete while typing
+function seatInput() {
+  const box = document.getElementById('seatResult');
+  const matches = seatMatches(document.getElementById('seatSearchInput').value);
+  if (matches === null) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  if (matches.length === 0) {
+    box.innerHTML = seatNotFoundHTML();
+  } else if (matches.length === 1) {
+    box.innerHTML = seatFoundHTML(matches[0]);
+  } else {
+    box.innerHTML = seatSuggestHTML(matches);
+  }
+  box.style.display = 'block';
+  setLang(currentLang);
+}
+
+// Click a suggestion → fill input and show the table card
+function pickSeat(btn) {
+  document.getElementById('seatSearchInput').value = btn.dataset.name;
+  const box = document.getElementById('seatResult');
+  const g = SEAT_GUESTS.find(x => guestDisplayName(x) === btn.dataset.name);
+  if (g) { box.innerHTML = seatFoundHTML(g); box.style.display = 'block'; setLang(currentLang); }
+}
+
+// Submit / Enter → collapse to a single answer when possible
+function findSeat(e) {
+  e.preventDefault();
+  const box = document.getElementById('seatResult');
+  const matches = seatMatches(document.getElementById('seatSearchInput').value);
+  if (matches === null) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  if (matches.length === 0) {
+    box.innerHTML = seatNotFoundHTML();
+  } else if (matches.length === 1) {
+    box.innerHTML = seatFoundHTML(matches[0]);
+  } else {
+    box.innerHTML = seatSuggestHTML(matches);
+  }
+  box.style.display = 'block';
+  setLang(currentLang);
+}
+
+document.getElementById('seatSearchInput').addEventListener('input', seatInput);
+
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.1 });
@@ -1100,4 +1235,4 @@ function initRSVPDeadline() {
 initRSVPDeadline();
 </script>
 </body>
-</html>
+</html>
