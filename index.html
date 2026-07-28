@@ -489,8 +489,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#home" onclick="closeDrawer()">Home</a>
   <a href="#story" onclick="closeDrawer()">Our Story</a>
   <a href="#bigday" onclick="closeDrawer()">The Big Day</a>
-  <a href="#rsvp" onclick="closeDrawer()">RSVP</a>
   <a href="#gallery" onclick="closeDrawer()">Photos</a>
+  <a href="#rsvp" onclick="closeDrawer()" style="display:none;">RSVP</a>
   <a href="#library" onclick="closeDrawer()">Library</a>
   <a href="#stay" onclick="closeDrawer()">Stay &amp; Travel</a>
   <a href="#beauty" onclick="closeDrawer()">Beauty</a>
@@ -512,8 +512,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#home"    data-nav-en="Home"             data-nav-ro="Acasă">Home</a>
   <a href="#story"   data-nav-en="Our Story"         data-nav-ro="Povestea">Our Story</a>
   <a href="#bigday"  data-nav-en="The Big Day"       data-nav-ro="Ziua Mare">The Big Day</a>
-  <a href="#rsvp"     data-nav-en="RSVP"              data-nav-ro="Confirmare">RSVP</a>
   <a href="#gallery" data-nav-en="Photos"            data-nav-ro="Poze">Photos</a>
+  <a href="#rsvp"     data-nav-en="RSVP"              data-nav-ro="Confirmare" style="display:none;">RSVP</a>
   <a href="#library" data-nav-en="Library"           data-nav-ro="Bibliotecă">Library</a>
   <a href="#stay"    data-nav-en="Stay &amp; Travel" data-nav-ro="Cazare">Stay &amp; Travel</a>
   <a href="#beauty"  data-nav-en="Beauty"            data-nav-ro="Frumusețe">Beauty</a>
@@ -665,8 +665,54 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   </div>
 </section>
 
+<!-- ══ GALLERY (guest photo upload) ══ -->
+<section id="gallery" style="background:var(--parchment);">
+  <div class="section-inner reveal" style="text-align:center;">
+    <span class="section-eyebrow" data-lang="en">Share the Moment</span>
+    <span class="section-eyebrow" data-lang="ro">Împărtășiți Momentul</span>
+    <h2 class="section-title" data-lang="en">Wedding-Day <em>Photos</em></h2>
+    <h2 class="section-title" data-lang="ro">Poze de la <em>Nuntă</em></h2>
+
+    <div class="gallery-card">
+      <!-- Teaser — shown before the ceremony starts -->
+      <div id="gallery-teaser">
+        <p class="section-body" style="margin:0 auto;" data-lang="en">Photo uploads unlock at the ceremony — save your favourite shots and share them here on the day!</p>
+        <p class="section-body" style="margin:0 auto;" data-lang="ro">Încărcarea pozelor se deschide la ceremonie — păstrați-vă cele mai reușite poze și încărcați-le aici în ziua nunții!</p>
+        <div class="gallery-countdown" id="gallery-countdown">
+          <span data-lang="en" id="gallery-countdown-en"></span>
+          <span data-lang="ro" id="gallery-countdown-ro"></span>
+        </div>
+      </div>
+
+      <!-- Active upload form — shown from 14:30 on 30 July 2026 -->
+      <div id="gallery-active" style="display:none;">
+        <p class="section-body" style="margin:0 auto 18px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
+        <p class="section-body" style="margin:0 auto 18px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
+        <input type="file" id="galleryPhotoInput" accept="image/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <input type="file" id="galleryVideoInput" accept="video/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photo ↗</label>
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poză ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Video ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="ro">Alege Video ↗</label>
+        <div class="gallery-status" id="galleryUploadStatus"></div>
+        <div class="success-msg" id="gallerySuccessMsg">
+          <p data-lang="en">Uploaded! Thank you for sharing. ♡</p>
+          <p data-lang="ro">Încărcat! Mulțumim că ați împărtășit. ♡</p>
+        </div>
+        <div class="error-msg" id="galleryErrorMsg">
+          <p data-lang="en">Upload failed.</p>
+          <p data-lang="ro">Încărcarea a eșuat.</p>
+          <small data-lang="en">Please check your connection and try again.</small>
+          <small data-lang="ro">Verificați conexiunea și încercați din nou.</small>
+          <button onclick="document.getElementById('galleryErrorMsg').classList.remove('show')">Try Again / Încearcă Din Nou</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ══ RSVP ══ -->
-<section id="rsvp">
+<section id="rsvp" style="display:none;">
   <div class="section-inner reveal">
     <span class="section-eyebrow" data-lang="en">You're Invited</span>
     <span class="section-eyebrow" data-lang="ro">Ești Invitat</span>
@@ -742,52 +788,6 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
         <small data-lang="en">Please check your connection and try again.</small>
         <small data-lang="ro">Verificați conexiunea și încercați din nou.</small>
         <button onclick="retryRSVP()">Try Again / Încearcă Din Nou</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ GALLERY (guest photo upload) ══ -->
-<section id="gallery" style="background:var(--parchment);">
-  <div class="section-inner reveal" style="text-align:center;">
-    <span class="section-eyebrow" data-lang="en">Share the Moment</span>
-    <span class="section-eyebrow" data-lang="ro">Împărtășiți Momentul</span>
-    <h2 class="section-title" data-lang="en">Wedding-Day <em>Photos</em></h2>
-    <h2 class="section-title" data-lang="ro">Poze de la <em>Nuntă</em></h2>
-
-    <div class="gallery-card">
-      <!-- Teaser — shown before the ceremony starts -->
-      <div id="gallery-teaser">
-        <p class="section-body" style="margin:0 auto;" data-lang="en">Photo uploads unlock at the ceremony — save your favourite shots and share them here on the day!</p>
-        <p class="section-body" style="margin:0 auto;" data-lang="ro">Încărcarea pozelor se deschide la ceremonie — păstrați-vă cele mai reușite poze și încărcați-le aici în ziua nunții!</p>
-        <div class="gallery-countdown" id="gallery-countdown">
-          <span data-lang="en" id="gallery-countdown-en"></span>
-          <span data-lang="ro" id="gallery-countdown-ro"></span>
-        </div>
-      </div>
-
-      <!-- Active upload form — shown from 14:30 on 30 July 2026 -->
-      <div id="gallery-active" style="display:none;">
-        <p class="section-body" style="margin:0 auto 18px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
-        <p class="section-body" style="margin:0 auto 18px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
-        <input type="file" id="galleryPhotoInput" accept="image/*" style="display:none;" onchange="uploadGalleryFile(this)">
-        <input type="file" id="galleryVideoInput" accept="video/*" style="display:none;" onchange="uploadGalleryFile(this)">
-        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photo ↗</label>
-        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poză ↗</label>
-        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Video ↗</label>
-        <label for="galleryVideoInput" class="gallery-btn" data-lang="ro">Alege Video ↗</label>
-        <div class="gallery-status" id="galleryUploadStatus"></div>
-        <div class="success-msg" id="gallerySuccessMsg">
-          <p data-lang="en">Uploaded! Thank you for sharing. ♡</p>
-          <p data-lang="ro">Încărcat! Mulțumim că ați împărtășit. ♡</p>
-        </div>
-        <div class="error-msg" id="galleryErrorMsg">
-          <p data-lang="en">Upload failed.</p>
-          <p data-lang="ro">Încărcarea a eșuat.</p>
-          <small data-lang="en">Please check your connection and try again.</small>
-          <small data-lang="ro">Verificați conexiunea și încercați din nou.</small>
-          <button onclick="document.getElementById('galleryErrorMsg').classList.remove('show')">Try Again / Încearcă Din Nou</button>
-        </div>
       </div>
     </div>
   </div>
@@ -1033,8 +1033,8 @@ function setLang(lang) {
   const ni = document.getElementById('nameInput');
   if (ni) ni.placeholder = lang === 'en' ? 'e.g. Maria Tulgara, Marius Onofrei' : 'ex. Maria Tulgara, Marius Onofrei';
   const labels = {
-    en: ['Home','Our Story','The Big Day','RSVP','Photos','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
-    ro: ['Acasă','Povestea Noastră','Ziua Mare','Confirmare','Poze','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
+    en: ['Home','Our Story','The Big Day','Photos','RSVP','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
+    ro: ['Acasă','Povestea Noastră','Ziua Mare','Poze','Confirmare','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
   };
   document.querySelectorAll('.nav-drawer a').forEach((a, i) => {
     if (labels[lang][i]) a.textContent = labels[lang][i];
