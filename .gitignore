@@ -8,3 +8,6 @@ node_modules/
 Thumbs.db
 *.log
 .idea/
+
+# Guest names in clear text — the site only ever ships the hashed digests
+seating/guests.local.json

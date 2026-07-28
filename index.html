@@ -403,12 +403,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 [data-lang]{display:none;}
 [data-lang].active{display:block;}
 
-/* ── SEATING AUTOCOMPLETE ── */
-.seat-suggest-list{flex-direction:column;gap:6px;}
-[data-lang].seat-suggest-list.active{display:flex;}
-.seat-suggest-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:12px 16px;border:1px solid var(--olive-lt);background:rgba(255,255,255,0.7);cursor:pointer;font-family:'Jost',sans-serif;font-size:14px;color:var(--olive-dk);text-align:left;transition:background 0.2s,border-color 0.2s;}
-.seat-suggest-row:hover,.seat-suggest-row:focus{background:var(--olive);color:#fff;border-color:var(--olive);}
-.seat-suggest-table{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;white-space:nowrap;opacity:0.85;}
+/* ── SEATING PRIVACY NOTE ── */
+.seat-note{margin-top:14px;font-family:'Jost',sans-serif;font-size:11px;letter-spacing:0.08em;color:var(--olive-dk);opacity:0.7;}
 
 /* ── LARGE DESKTOP (≥1280px) ── */
 @media(min-width:1280px){
@@ -754,8 +750,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
     <span class="section-eyebrow" data-lang="ro">Găsește-ți Locul</span>
     <h2 class="section-title" data-lang="en">Your Table <em>Awaits</em></h2>
     <h2 class="section-title" data-lang="ro">Masa Ta Te <em>Așteaptă</em></h2>
-    <p class="section-body" data-lang="en" style="margin:0 auto;">Enter your name to find your table on the day of the wedding.</p>
-    <p class="section-body" data-lang="ro" style="margin:0 auto;">Introdu numele tău pentru a-ți găsi masa în ziua nunții.</p>
+    <p class="section-body" data-lang="en" style="margin:0 auto;">Enter your full name — first and last — to find your table on the day of the wedding.</p>
+    <p class="section-body" data-lang="ro" style="margin:0 auto;">Introdu numele complet — prenume și nume — pentru a-ți găsi masa în ziua nunții.</p>
 
     <div class="rsvp-card" style="margin-top:36px;">
       <form id="seatingForm" onsubmit="findSeat(event);">
@@ -767,6 +763,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
         <button type="submit" class="submit-btn" data-lang="en">Find my table ↗</button>
         <button type="submit" class="submit-btn" data-lang="ro">Găsește-mi masa ↗</button>
       </form>
+      <p class="seat-note" data-lang="en">The guest list is stored encoded — your name is checked on your own device and never sent anywhere.</p>
+      <p class="seat-note" data-lang="ro">Lista invitaților este stocată codificat — numele tău este verificat pe propriul dispozitiv și nu este trimis nicăieri.</p>
     </div>
 
     <div id="seatResult" class="seating-result" style="display:none;margin:24px auto 0;max-width:560px;padding:20px 24px;border:1px solid var(--olive-lt);background:rgba(255,255,255,0.75);font-family:'Jost',sans-serif;text-align:center;"></div>
@@ -1036,26 +1034,191 @@ function closeDrawer() {
 setLang('ro');
 
 // ══ SEATING LOOKUP ══
+// Guest names are never published: each entry is a PBKDF2-SHA256 digest of the
+// normalized name, so the page can confirm a table without carrying a readable
+// guest list. Regenerate with `node tools/hash-guests.mjs` after editing
+// seating/guests.local.json — these three constants must match that script.
+const SEAT_SALT = 'marius-maria-2026-seating';
+const SEAT_ITERATIONS = 120000;
+const SEAT_DIGEST_CHARS = 16;
+
 const SEAT_GUESTS = [
-  { nom: "Dubois",    prenom: "Camille", numero_table: 1 },
-  { nom: "Martin",    prenom: "Lucas",   numero_table: 2 },
-  { nom: "Lefevre",   prenom: "Emma",    numero_table: 1 },
-  { nom: "Bernard",   prenom: "Hugo",    numero_table: 3 },
-  { nom: "Petit",     prenom: "Léa",     numero_table: 2 },
-  { nom: "Moreau",    prenom: "Nathan",  numero_table: 4 },
-  { nom: "Girard",    prenom: "Chloé",   numero_table: 3 },
-  { nom: "Rousseau",  prenom: "Maxime",  numero_table: 5 },
-  { nom: "Fontaine",  prenom: "Sarah",   numero_table: 4 },
-  { nom: "Chevalier", prenom: "Thomas",  numero_table: 1 },
-  { nom: "Robin",     prenom: "Julie",   numero_table: 5 },
-  { nom: "Simon",     prenom: "Antoine", numero_table: 2 },
-  { nom: "Laurent",   prenom: "Manon",   numero_table: 3 },
-  { nom: "Michel",    prenom: "Louis",   numero_table: 4 },
-  { nom: "Garnier",   prenom: "Inès",    numero_table: 5 },
-  { nom: "Tulgara",   prenom: "Maria",   numero_table: 3 },
-  { nom: "Onofrei",   prenom: "Marius",  numero_table: 3 },
-  { nom: "Ottone",    prenom: "Thomas",  numero_table: 1 },
-  { nom: "",          prenom: "Zuza",    numero_table: 1 },
+  { h: "0163d0f9bd4d98ac", t: "6" },
+  { h: "017325f86e1c2834", t: "2" },
+  { h: "0195fcff7afe8215", t: "2" },
+  { h: "029e09813e60d53d", t: "8" },
+  { h: "05074be4e4628ea9", t: "1" },
+  { h: "0645c9e7a67a6c93", t: "7" },
+  { h: "0a58516d5858b504", t: "1" },
+  { h: "0af466b71706f5cf", t: "8" },
+  { h: "0b1f0e9541cb80c7", t: "8" },
+  { h: "0f4cf6052bdaec3e", t: "3" },
+  { h: "14bdbbe0cae18677", t: "2" },
+  { h: "18879c8349465672", t: "2" },
+  { h: "199d27adc0b49e2c", t: "5" },
+  { h: "19b2503bee9ea1f6", t: "2" },
+  { h: "1b95736da7bec288", t: "7" },
+  { h: "1e91b38b446da751", t: "6" },
+  { h: "1ee8bbeb90361cc2", t: "6" },
+  { h: "2018c0a04842f6d3", t: "3" },
+  { h: "22863ba0e1b09c4e", t: "3" },
+  { h: "22b644481222a5e8", t: "4" },
+  { h: "23741f1ff588c0ea", t: "5" },
+  { h: "23a1d4161ee7484e", t: "2" },
+  { h: "24384fff9d9c6535", t: "8" },
+  { h: "25ea22f500a61561", t: "5" },
+  { h: "261645426e45d879", t: "3" },
+  { h: "2677b2d42af6de8c", t: "7" },
+  { h: "26bae37542550fe0", t: "5" },
+  { h: "2b19fb12590aeeb5", t: "4" },
+  { h: "2b974b4e4b44df5a", t: "3" },
+  { h: "2de6047c18373203", t: "5" },
+  { h: "2e6f0fcb3fc4f031", t: "3" },
+  { h: "2f05c21766435426", t: "6" },
+  { h: "2fada1cd58fb6582", t: "4" },
+  { h: "312ebfce77cab2a8", t: "1" },
+  { h: "321a2d0d34f0473a", t: "3" },
+  { h: "334111c7ccf74b21", t: "5" },
+  { h: "334111c7ccf74b21", t: "8" },
+  { h: "33cc51e9c3ff321d", t: "5" },
+  { h: "33ec1bfc5b5a2728", t: "Prezidium" },
+  { h: "33fbfa106e921e9c", t: "2" },
+  { h: "346dc92b7dcc245b", t: "6" },
+  { h: "3543090477ad3c24", t: "1" },
+  { h: "35616b74965a22f4", t: "5" },
+  { h: "356512d7729245c8", t: "5" },
+  { h: "36241967d30900a8", t: "2" },
+  { h: "36c115425265de1c", t: "7" },
+  { h: "38b007396c22fe86", t: "4" },
+  { h: "393b93607bb2e427", t: "3" },
+  { h: "404af3f8d190a2a1", t: "2" },
+  { h: "4439fcaf4f8bff8b", t: "6" },
+  { h: "457803970e2705da", t: "8" },
+  { h: "463464fa22352ea4", t: "1" },
+  { h: "474a28ce839b3249", t: "3" },
+  { h: "4a58da22620503ee", t: "5" },
+  { h: "4bef5e580f9da576", t: "4" },
+  { h: "4f349e80c6eeb7ab", t: "4" },
+  { h: "50c62a21a520c756", t: "8" },
+  { h: "50eeff66e34f7f65", t: "5" },
+  { h: "51c056ee1cad171d", t: "4" },
+  { h: "5249d86e364723f3", t: "6" },
+  { h: "5265a959d293ac38", t: "4" },
+  { h: "540396f50b835b5b", t: "2" },
+  { h: "54164cb203f1ba48", t: "6" },
+  { h: "54f4bf4b0c3887d7", t: "5" },
+  { h: "5af9e8aa943d68ad", t: "8" },
+  { h: "5b344fe19e9d464e", t: "7" },
+  { h: "5bf9d2e32a8c3243", t: "8" },
+  { h: "5cbf43b822958f7b", t: "2" },
+  { h: "6295fa562eaada0f", t: "5" },
+  { h: "651ab922f66e35b0", t: "3" },
+  { h: "65574d33c9b0f43e", t: "6" },
+  { h: "672c1d5f8395bf10", t: "1" },
+  { h: "681de91861e7a57d", t: "1" },
+  { h: "6a2955ae7e76211f", t: "7" },
+  { h: "6d00502c7118e50a", t: "8" },
+  { h: "7056f38a0a696061", t: "7" },
+  { h: "712f626344ca02bc", t: "2" },
+  { h: "71537e4ca4e8cac1", t: "1" },
+  { h: "721ed55db2721338", t: "5" },
+  { h: "73de311ef3c5fdc1", t: "7" },
+  { h: "75ba5a2fc459859b", t: "3" },
+  { h: "76c51f478d2d4151", t: "8" },
+  { h: "78e4d8f67f73b958", t: "4" },
+  { h: "78f825539eeab60e", t: "3" },
+  { h: "797675c28e69760f", t: "1" },
+  { h: "7b1490e95aebc165", t: "8" },
+  { h: "7d1f030bdb030160", t: "7" },
+  { h: "7eea8d125b018d3f", t: "6" },
+  { h: "80155d148aad32aa", t: "7" },
+  { h: "81f25027af132da0", t: "1" },
+  { h: "82216d3cba51c81d", t: "Prezidium" },
+  { h: "845514dcaff662de", t: "3" },
+  { h: "84bc026cad2753c4", t: "4" },
+  { h: "8684a459baac020a", t: "3" },
+  { h: "8876f05f5b723beb", t: "7" },
+  { h: "8961e90928186cbc", t: "6" },
+  { h: "89f97abaf2a2f349", t: "5" },
+  { h: "8ccc0dc573f2f282", t: "7" },
+  { h: "90032aedb6681bfa", t: "6" },
+  { h: "9107169fa97cc88f", t: "4" },
+  { h: "914b39fa48dc53b8", t: "5" },
+  { h: "9302b42251695691", t: "8" },
+  { h: "94fbbe6c720e2d30", t: "6" },
+  { h: "9571717f9c20fd33", t: "7" },
+  { h: "97da39086f8408c5", t: "7" },
+  { h: "9968efda47779d3b", t: "1" },
+  { h: "9ace0be2f2efac81", t: "7" },
+  { h: "9bdcf3d6473dd26a", t: "8" },
+  { h: "9d26bcf7fef72ccc", t: "2" },
+  { h: "9e0e5e58cd383bcf", t: "3" },
+  { h: "9e5a30fdfb8e52c2", t: "8" },
+  { h: "9f146623fc92b65d", t: "3" },
+  { h: "a21e2dd58d6e3b32", t: "1" },
+  { h: "a238619295f0da07", t: "2" },
+  { h: "a24fbfd6f2c41c50", t: "6" },
+  { h: "a25d67684d3dd1e8", t: "2" },
+  { h: "a2ad1c18082dab29", t: "3" },
+  { h: "a58c7b02306cd8a8", t: "4" },
+  { h: "a86a0d064ef650a0", t: "8" },
+  { h: "ac0dad086ae15a6c", t: "6" },
+  { h: "acacf09fb1a764bb", t: "2" },
+  { h: "acf35baed47f7e6f", t: "6" },
+  { h: "ae607ceca2e77c9b", t: "7" },
+  { h: "aecc45c1268b3c33", t: "2" },
+  { h: "af597d9e080f09ab", t: "8" },
+  { h: "b34af9095a3246b5", t: "4" },
+  { h: "b5a15337d88f1e15", t: "2" },
+  { h: "b6d37dd7a7bbc86f", t: "1" },
+  { h: "ba8863428bfe3066", t: "4" },
+  { h: "bb83a2a69d9edb96", t: "4" },
+  { h: "bc1abd43ea5e2e21", t: "5" },
+  { h: "bcc992088b04d6d5", t: "3" },
+  { h: "bebc4ce1fb33e5ea", t: "4" },
+  { h: "c301be2c0661817b", t: "2" },
+  { h: "c4e71e61efa8c519", t: "8" },
+  { h: "c7325d9cd9757fb3", t: "5" },
+  { h: "ca2ee313bd593b4a", t: "4" },
+  { h: "cb5b7c73534126f5", t: "1" },
+  { h: "cbccd042e838f22f", t: "1" },
+  { h: "cd7207dae1918228", t: "5" },
+  { h: "cd8c13172c1943c5", t: "7" },
+  { h: "cda040e1efdd186c", t: "7" },
+  { h: "ce067de9d220f7e3", t: "8" },
+  { h: "ce786410d99fa226", t: "1" },
+  { h: "d3c7037d3462b5f4", t: "3" },
+  { h: "d410b6cc13e4c85b", t: "Prezidium" },
+  { h: "d45add2a15763c31", t: "4" },
+  { h: "d588caa3309834c3", t: "2" },
+  { h: "d725135755b94b45", t: "1" },
+  { h: "d80fb8a2b2f2010f", t: "4" },
+  { h: "d8e201d0764d5494", t: "6" },
+  { h: "d8e81db72d6fc239", t: "6" },
+  { h: "da05391f6fc54bb8", t: "8" },
+  { h: "dd9c869ac8a24b6e", t: "2" },
+  { h: "dde9f774033d247b", t: "8" },
+  { h: "de0af1e601cbea10", t: "1" },
+  { h: "e0fdd1b0f68778b4", t: "1" },
+  { h: "e1fb533b92e4cdc6", t: "1" },
+  { h: "e3fe320677512d7b", t: "5" },
+  { h: "eb99a13d54030327", t: "8" },
+  { h: "ed85821c73b35bb4", t: "2" },
+  { h: "ef13550d91c44b38", t: "3" },
+  { h: "ef763cbb6f1d3374", t: "6" },
+  { h: "f31e2529927485e1", t: "1" },
+  { h: "f4191299a161cd77", t: "4" },
+  { h: "f56e762e84977f86", t: "1" },
+  { h: "f5bd8c03bdea76fb", t: "4" },
+  { h: "f6787e31255da178", t: "6" },
+  { h: "f7bf3b219ff31b38", t: "7" },
+  { h: "f9ba33afddd61c1a", t: "3" },
+  { h: "fa5c2137df0b0006", t: "Prezidium" },
+  { h: "fb5f2b9f0a171809", t: "3" },
+  { h: "fc2ba585a5f01a46", t: "7" },
+  { h: "fcc0733e86faa67b", t: "1" },
+  { h: "fdd054bc958c3ede", t: "4" },
+  { h: "fe5613efa9cd2ec4", t: "5" },
 ];
 
 function normalizeName(s) {
@@ -1069,101 +1232,129 @@ function normalizeName(s) {
     .trim();
 }
 
-function guestDisplayName(g) {
-  return [g.prenom, g.nom].filter(Boolean).join(' ').trim();
+// Word order does not matter: "Ion Gutium" and "Gutium Ion" hash the same.
+function seatKey(value) {
+  const n = normalizeName(value);
+  return n ? n.split(' ').sort().join(' ') : '';
 }
 
-function seatFoundHTML(g) {
-  const name = guestDisplayName(g);
-  const t = g.numero_table;
-  return `
-    <span data-lang="en">
-      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);">${name} — your table</span>
-      <strong style="display:block;font-size:48px;line-height:1;color:var(--olive-dk);font-weight:400;margin-top:8px;">${t}</strong>
-    </span>
-    <span data-lang="ro">
-      <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);">${name} — masa ta</span>
-      <strong style="display:block;font-size:48px;line-height:1;color:var(--olive-dk);font-weight:400;margin-top:8px;">${t}</strong>
-    </span>`;
+const seatHashCache = new Map();
+
+async function seatHash(key) {
+  if (seatHashCache.has(key)) return seatHashCache.get(key);
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.importKey('raw', enc.encode(key), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(SEAT_SALT), iterations: SEAT_ITERATIONS, hash: 'SHA-256' },
+    material, 256);
+  const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, SEAT_DIGEST_CHARS);
+  seatHashCache.set(key, hex);
+  return hex;
 }
 
-function seatMultiHTML(list) {
-  const rows = (word) => list.map(g =>
-    `<div style="margin-top:4px;">${guestDisplayName(g)} — ${word} <strong>${g.numero_table}</strong></div>`
-  ).join('');
+function escapeHTML(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Numbered tables render as "Table 5" / "Masa 5"; named ones (Prezidium) stand alone.
+function isNumberedTable(t) {
+  return /^\d+$/.test(t);
+}
+function tableLabel(t, word) {
+  return isNumberedTable(t) ? `${word} ${t}` : t;
+}
+
+const seatLabelStyle = 'font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--olive-dk);';
+const seatValueStyle = 'display:block;line-height:1.1;color:var(--olive-dk);font-weight:400;margin-top:8px;';
+
+function seatFoundHTML(typedName, tables) {
+  const name = escapeHTML(typedName);
+  const card = (top, word, ambiguous) => {
+    const value = tables.map(t => (tables.length === 1 && isNumberedTable(t)) ? t : tableLabel(t, word)).join(' · ');
+    const size = (tables.length === 1 && isNumberedTable(tables[0])) ? 48 : 30;
+    return `
+      <span style="${seatLabelStyle}">${name} — ${top}</span>
+      <strong style="${seatValueStyle}font-size:${size}px;">${value}</strong>
+      ${tables.length > 1 ? `<span style="display:block;margin-top:10px;font-size:12px;color:var(--olive-dk);opacity:0.8;">${ambiguous}</span>` : ''}`;
+  };
   return `
-    <span data-lang="en" style="font-size:13px;color:var(--olive-dk);"><div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Several matches — please be more specific</div>${rows('Table')}</span>
-    <span data-lang="ro" style="font-size:13px;color:var(--olive-dk);"><div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;">Mai multe rezultate — te rugăm să fii mai precis</div>${rows('Masa')}</span>`;
+    <span data-lang="en">${card('your table', 'Table', 'Two guests share this name — ask us which one is yours.')}</span>
+    <span data-lang="ro">${card('masa ta', 'Masa', 'Doi invitați au același nume — întreabă-ne care este masa ta.')}</span>`;
+}
+
+function seatMessageHTML(en, ro) {
+  return `
+    <span data-lang="en" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">${en}</span>
+    <span data-lang="ro" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">${ro}</span>`;
 }
 
 function seatNotFoundHTML() {
-  return `
-    <span data-lang="en" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">Name not found — please check the spelling or contact the couple.</span>
-    <span data-lang="ro" style="font-size:12px;letter-spacing:0.04em;color:var(--olive-dk);">Nume negăsit — verifică ortografia sau contactează mirii.</span>`;
+  return seatMessageHTML(
+    'Name not found — please enter your full name, first and last, as on the invitation.',
+    'Nume negăsit — introdu numele complet, prenume și nume, ca pe invitație.');
 }
 
-function seatMatches(value) {
-  const q = normalizeName(value);
-  if (!q) return null;
-  const tokens = q.split(' ');
-  return SEAT_GUESTS.filter(g => {
-    const hay = normalizeName(guestDisplayName(g));
-    return tokens.every(t => hay.includes(t));
-  });
+function seatSearchingHTML() {
+  return seatMessageHTML('Searching…', 'Se caută…');
 }
 
-function seatSuggestHTML(list) {
-  const rows = (word) => list.map(g => {
-    const name = guestDisplayName(g);
-    return `<button type="button" class="seat-suggest-row" onclick="pickSeat(this)" data-name="${name}"><span>${name}</span><span class="seat-suggest-table">${word} ${g.numero_table}</span></button>`;
-  }).join('');
-  return `
-    <span data-lang="en" class="seat-suggest-list">${rows('Table')}</span>
-    <span data-lang="ro" class="seat-suggest-list">${rows('Masa')}</span>`;
+function seatUnavailableHTML() {
+  return seatMessageHTML(
+    'The lookup could not run in this browser — please try another one, or ask us directly.',
+    'Căutarea nu a putut rula în acest browser — încearcă altul sau întreabă-ne direct.');
 }
 
-// Live autocomplete while typing
-function seatInput() {
+function showSeatBox(html) {
   const box = document.getElementById('seatResult');
-  const matches = seatMatches(document.getElementById('seatSearchInput').value);
-  if (matches === null) { box.style.display = 'none'; box.innerHTML = ''; return; }
-  if (matches.length === 0) {
-    box.innerHTML = seatNotFoundHTML();
-  } else if (matches.length === 1) {
-    box.innerHTML = seatFoundHTML(matches[0]);
-  } else {
-    box.innerHTML = seatSuggestHTML(matches);
-  }
+  box.innerHTML = html;
   box.style.display = 'block';
   setLang(currentLang);
 }
 
-// Click a suggestion → fill input and show the table card
-function pickSeat(btn) {
-  document.getElementById('seatSearchInput').value = btn.dataset.name;
+function hideSeatBox() {
   const box = document.getElementById('seatResult');
-  const g = SEAT_GUESTS.find(x => guestDisplayName(x) === btn.dataset.name);
-  if (g) { box.innerHTML = seatFoundHTML(g); box.style.display = 'block'; setLang(currentLang); }
+  box.style.display = 'none';
+  box.innerHTML = '';
 }
 
-// Submit / Enter → collapse to a single answer when possible
-function findSeat(e) {
-  e.preventDefault();
-  const box = document.getElementById('seatResult');
-  const matches = seatMatches(document.getElementById('seatSearchInput').value);
-  if (matches === null) { box.style.display = 'none'; box.innerHTML = ''; return; }
-  if (matches.length === 0) {
-    box.innerHTML = seatNotFoundHTML();
-  } else if (matches.length === 1) {
-    box.innerHTML = seatFoundHTML(matches[0]);
-  } else {
-    box.innerHTML = seatSuggestHTML(matches);
+let seatRequestId = 0;
+
+// The guest list only exists as digests, so a lookup means hashing the typed
+// name and comparing — no partial matching, hence no autocomplete.
+async function findSeat(e) {
+  if (e) e.preventDefault();
+  const typed = document.getElementById('seatSearchInput').value.trim();
+  const key = seatKey(typed);
+  const id = ++seatRequestId;
+  if (!key) { hideSeatBox(); return; }
+  if (!window.crypto || !crypto.subtle) { showSeatBox(seatUnavailableHTML()); return; }
+
+  const slow = setTimeout(() => { if (id === seatRequestId) showSeatBox(seatSearchingHTML()); }, 200);
+  let hash;
+  try {
+    hash = await seatHash(key);
+  } catch (err) {
+    clearTimeout(slow);
+    if (id === seatRequestId) showSeatBox(seatUnavailableHTML());
+    return;
   }
-  box.style.display = 'block';
-  setLang(currentLang);
+  clearTimeout(slow);
+  if (id !== seatRequestId) return; // superseded by a newer search
+
+  const tables = SEAT_GUESTS.filter(g => g.h === hash).map(g => g.t);
+  showSeatBox(tables.length ? seatFoundHTML(typed, tables) : seatNotFoundHTML());
 }
 
-document.getElementById('seatSearchInput').addEventListener('input', seatInput);
+// Auto-search shortly after typing stops, but only once a full name is there.
+let seatDebounce;
+document.getElementById('seatSearchInput').addEventListener('input', () => {
+  clearTimeout(seatDebounce);
+  seatRequestId++; // drop any in-flight result
+  hideSeatBox();
+  const key = seatKey(document.getElementById('seatSearchInput').value);
+  if (key.split(' ').length < 2) return;
+  seatDebounce = setTimeout(findSeat, 600);
+});
 
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -1237,4 +1428,4 @@ function initRSVPDeadline() {
 initRSVPDeadline();
 </script>
 </body>
-</html>
+</html>
