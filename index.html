@@ -674,6 +674,11 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
     <h2 class="section-title" data-lang="ro">Poze de la <em>Nuntă</em></h2>
 
     <div class="gallery-card">
+      <!-- In-app browser warning — some apps' embedded browser blocks the photo/camera picker entirely -->
+      <div id="gallery-inapp-warning" class="gallery-countdown" style="display:none;margin-bottom:16px;">
+        <span data-lang="en">Uploads may not work inside this app's browser — tap ⋮ or Share, then "Open in Chrome/Safari".</span>
+        <span data-lang="ro">Încărcarea poate să nu funcționeze în browserul acestei aplicații — apăsați ⋮ sau Distribuire, apoi „Deschide în Chrome/Safari".</span>
+      </div>
       <!-- Teaser — shown before the ceremony starts -->
       <div id="gallery-teaser">
         <p class="section-body" style="margin:0 auto;" data-lang="en">Photo uploads unlock at the ceremony — save your favourite shots and share them here on the day!</p>
@@ -1200,6 +1205,25 @@ function initGalleryReveal() {
   }
 }
 initGalleryReveal();
+
+// ── In-app browser detection ──
+// Apps like Google app (GSA), Facebook, Instagram, WeChat, Line, TikTok, Snapchat
+// embed their own WebView which frequently blocks the native file/camera picker
+// entirely — this is a platform limitation, not fixable from the page itself.
+// Detect it and point the guest at their real browser instead.
+function checkInAppBrowser() {
+  var ua = navigator.userAgent || '';
+  var isInApp = /FBAN|FBAV|Instagram|Line\/|GSA\/|MicroMessenger|TikTok|Snapchat/i.test(ua);
+  var el = document.getElementById('gallery-inapp-warning');
+  if (!el) return;
+  el.style.display = isInApp ? 'block' : 'none';
+  if (isInApp) {
+    document.querySelectorAll('#gallery-inapp-warning [data-lang]').forEach(function(e) {
+      e.classList.toggle('active', e.dataset.lang === currentLang);
+    });
+  }
+}
+checkInAppBrowser();
 </script>
 </body>
 </html>
