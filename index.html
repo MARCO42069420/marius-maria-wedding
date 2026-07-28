@@ -748,7 +748,7 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 </section>
 
 <!-- ══ GALLERY (guest photo upload) ══ -->
-<section id="gallery" style="background:var(--ivory);">
+<section id="gallery" style="background:var(--parchment);">
   <div class="section-inner reveal" style="text-align:center;">
     <span class="section-eyebrow" data-lang="en">Share the Moment</span>
     <span class="section-eyebrow" data-lang="ro">Împărtășiți Momentul</span>
@@ -770,9 +770,12 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
       <div id="gallery-active" style="display:none;">
         <p class="section-body" style="margin:0 auto 18px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
         <p class="section-body" style="margin:0 auto 18px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
-        <input type="file" id="galleryFileInput" accept="image/*,video/*" style="display:none;" onchange="uploadGalleryFile(this)">
-        <label for="galleryFileInput" class="gallery-btn" data-lang="en">Choose Photo/Video ↗</label>
-        <label for="galleryFileInput" class="gallery-btn" data-lang="ro">Alege Poză/Video ↗</label>
+        <input type="file" id="galleryPhotoInput" accept="image/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <input type="file" id="galleryVideoInput" accept="video/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photo ↗</label>
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poză ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Video ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="ro">Alege Video ↗</label>
         <div class="gallery-status" id="galleryUploadStatus"></div>
         <div class="success-msg" id="gallerySuccessMsg">
           <p data-lang="en">Uploaded! Thank you for sharing. ♡</p>
