@@ -1169,7 +1169,7 @@ initRSVPDeadline();
 
 // ── Gallery reveal — unlocks at ceremony start, 14:30 on 30 July 2026 ──
 function initGalleryReveal() {
-  var reveal = new Date('2026-07-30T14:30:00');
+  var reveal = new Date('2026-07-27T00:00:00'); // TEMP for live testing — revert to 2026-07-30T14:30:00 after
   var now = new Date();
   var isLive = now >= reveal;
   document.getElementById('gallery-teaser').style.display = isLive ? 'none' : 'block';
