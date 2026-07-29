@@ -364,6 +364,12 @@ section{padding:90px 24px;}
 .gallery-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;min-height:48px;background:var(--olive);color:white;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:background 0.3s;margin:4px;}
 .gallery-btn:hover{background:var(--olive-dk);}
 .gallery-status{margin-top:14px;font-size:12px;color:var(--text-mid);min-height:16px;}
+.gallery-preview-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0 0;}
+.gallery-preview-item{position:relative;width:84px;height:84px;border:1px solid var(--border);background:white;overflow:hidden;flex-shrink:0;}
+.gallery-preview-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.gallery-preview-video{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--sage-lt);font-size:22px;gap:2px;}
+.gallery-preview-video span{font-size:8px;color:var(--olive-dk);padding:0 4px;text-align:center;line-height:1.2;word-break:break-all;max-height:24px;overflow:hidden;}
+.gallery-preview-remove{position:absolute;top:3px;right:3px;width:22px;height:22px;background:rgba(46,46,30,0.72);color:white;border:none;border-radius:50%;font-size:12px;line-height:22px;cursor:pointer;padding:0;min-width:22px;}
 
 /* ── BEAUTY ── */
 #beauty{background:var(--parchment);}
@@ -729,25 +735,28 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 
       <!-- Active upload form — shown from 14:30 on 30 July 2026 -->
       <div id="gallery-active" style="display:none;">
-        <p class="section-body" style="margin:0 auto 18px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
-        <p class="section-body" style="margin:0 auto 18px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
-        <input type="file" id="galleryPhotoInput" accept="image/*" style="display:none;" onchange="uploadGalleryFile(this)">
-        <input type="file" id="galleryVideoInput" accept="video/*" style="display:none;" onchange="uploadGalleryFile(this)">
-        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photo ↗</label>
-        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poză ↗</label>
-        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Video ↗</label>
+        <p class="section-body" style="margin:0 auto 6px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
+        <p class="section-body" style="margin:0 auto 6px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
+        <p class="section-body" style="margin:0 auto 18px;font-style:italic;color:var(--text-lt);font-size:13px;" data-lang="en">Pick as many as you like, then confirm below.</p>
+        <p class="section-body" style="margin:0 auto 18px;font-style:italic;color:var(--text-lt);font-size:13px;" data-lang="ro">Alegeți câte doriți, apoi confirmați mai jos.</p>
+        <input type="file" id="galleryPhotoInput" accept="image/*" multiple style="display:none;" onchange="addGalleryFiles(this.files, 'image'); this.value='';">
+        <input type="file" id="galleryVideoInput" accept="video/*" multiple style="display:none;" onchange="addGalleryFiles(this.files, 'video'); this.value='';">
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photos ↗</label>
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poze ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Videos ↗</label>
         <label for="galleryVideoInput" class="gallery-btn" data-lang="ro">Alege Video ↗</label>
+
+        <div class="gallery-preview-grid" id="galleryPreviewGrid"></div>
+
+        <div id="galleryConfirmWrap" style="display:none;margin-top:6px;">
+          <button type="button" class="gallery-btn" id="galleryConfirmBtnEn" data-lang="en" onclick="confirmGalleryUpload()"></button>
+          <button type="button" class="gallery-btn" id="galleryConfirmBtnRo" data-lang="ro" onclick="confirmGalleryUpload()"></button>
+        </div>
+
         <div class="gallery-status" id="galleryUploadStatus"></div>
         <div class="success-msg" id="gallerySuccessMsg">
           <p data-lang="en">Uploaded! Thank you for sharing. ♡</p>
           <p data-lang="ro">Încărcat! Mulțumim că ați împărtășit. ♡</p>
-        </div>
-        <div class="error-msg" id="galleryErrorMsg">
-          <p data-lang="en">Upload failed.</p>
-          <p data-lang="ro">Încărcarea a eșuat.</p>
-          <small data-lang="en">Please check your connection and try again.</small>
-          <small data-lang="ro">Verificați conexiunea și încercați din nou.</small>
-          <button onclick="document.getElementById('galleryErrorMsg').classList.remove('show')">Try Again / Încearcă Din Nou</button>
         </div>
       </div>
     </div>
@@ -1646,49 +1655,115 @@ function retryRSVP() {
   document.getElementById('errorMsg').classList.remove('show');
 }
 
-// ── Gallery upload ──
+// ── Gallery upload (multi-select, preview, confirm) ──
 var GALLERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec';
 var GALLERY_MAX_BYTES = 25 * 1024 * 1024; // 25MB client-side guard, matches server-side cap
+var galleryPendingFiles = []; // { file, url, kind: 'image'|'video' }
 
-function uploadGalleryFile(input) {
-  var file = input.files && input.files[0];
-  if (!file) return;
-  document.getElementById('galleryErrorMsg').classList.remove('show');
+function addGalleryFiles(fileList, kind) {
+  for (var i = 0; i < fileList.length; i++) {
+    var file = fileList[i];
+    var url = kind === 'image' ? URL.createObjectURL(file) : null;
+    galleryPendingFiles.push({ file: file, url: url, kind: kind });
+  }
+  renderGalleryPreview();
+}
+
+function removeGalleryFile(index) {
+  var item = galleryPendingFiles[index];
+  if (item.url) URL.revokeObjectURL(item.url);
+  galleryPendingFiles.splice(index, 1);
+  renderGalleryPreview();
+}
+
+function renderGalleryPreview() {
+  var grid = document.getElementById('galleryPreviewGrid');
+  grid.innerHTML = '';
+  galleryPendingFiles.forEach(function(item, i) {
+    var el = document.createElement('div');
+    el.className = 'gallery-preview-item';
+    if (item.kind === 'image') {
+      var img = document.createElement('img');
+      img.src = item.url;
+      el.appendChild(img);
+    } else {
+      var v = document.createElement('div');
+      v.className = 'gallery-preview-video';
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = item.file.name;
+      v.innerHTML = '🎬';
+      v.appendChild(nameSpan);
+      el.appendChild(v);
+    }
+    var rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'gallery-preview-remove';
+    rm.textContent = '✕';
+    rm.setAttribute('aria-label', 'Remove');
+    rm.onclick = function() { removeGalleryFile(i); };
+    el.appendChild(rm);
+    grid.appendChild(el);
+  });
+
+  var n = galleryPendingFiles.length;
+  document.getElementById('galleryConfirmWrap').style.display = n > 0 ? 'block' : 'none';
+  if (n > 0) {
+    document.getElementById('galleryConfirmBtnEn').textContent = 'Upload ' + n + (n === 1 ? ' item ↗' : ' items ↗');
+    document.getElementById('galleryConfirmBtnRo').textContent = 'Încarcă ' + n + (n === 1 ? ' element ↗' : ' elemente ↗');
+  }
+}
+
+function confirmGalleryUpload() {
+  if (galleryPendingFiles.length === 0) return;
   document.getElementById('gallerySuccessMsg').classList.remove('show');
 
-  if (file.size > GALLERY_MAX_BYTES) {
+  var oversized = galleryPendingFiles.filter(function(item) { return item.file.size > GALLERY_MAX_BYTES; });
+  if (oversized.length > 0) {
     document.getElementById('galleryUploadStatus').textContent =
-      currentLang === 'en' ? 'File too large — please choose a smaller photo or shorter clip.'
-                            : 'Fișier prea mare — alegeți o poză mai mică sau un clip mai scurt.';
-    input.value = '';
+      currentLang === 'en' ? oversized.length + ' file(s) too large — remove them or choose smaller ones.'
+                            : oversized.length + ' fișier(e) prea mari — eliminați-le sau alegeți altele mai mici.';
     return;
   }
 
+  var toUpload = galleryPendingFiles.slice();
+  var total = toUpload.length;
+  galleryPendingFiles = [];
+  renderGalleryPreview();
+
   document.getElementById('galleryUploadStatus').textContent =
-    currentLang === 'en' ? 'Uploading…' : 'Se încarcă…';
+    (currentLang === 'en' ? 'Uploading ' + total + ' item(s)…' : 'Se încarcă ' + total + ' element(e)…');
 
-  var reader = new FileReader();
-  reader.onload = function() {
-    var base64 = reader.result.split(',')[1];
-    // Fire and forget — same pattern as RSVP: no-cors response is opaque, can't be read either way.
-    // (Apps Script's ContentService can't set CORS response headers, so a real fetch can't read
-    // the response anyway — this is the proven-working pattern already in production for RSVP.)
-    fetch(GALLERY_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: file.name, mimeType: file.type, data: base64 })
-    }).catch(function() {});
+  var doneCount = 0;
+  function finishOne() {
+    doneCount++;
+    if (doneCount === total) {
+      document.getElementById('galleryUploadStatus').textContent = '';
+      document.getElementById('gallerySuccessMsg').classList.add('show');
+    }
+  }
 
-    document.getElementById('galleryUploadStatus').textContent = '';
-    document.getElementById('gallerySuccessMsg').classList.add('show');
-  };
-  reader.onerror = function() {
-    document.getElementById('galleryUploadStatus').textContent = '';
-    document.getElementById('galleryErrorMsg').classList.add('show');
-  };
-  reader.readAsDataURL(file);
-  input.value = ''; // allow re-selecting the same file later
+  toUpload.forEach(function(item) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var base64 = reader.result.split(',')[1];
+      // Fire and forget — same pattern as RSVP: no-cors response is opaque, can't be read either way.
+      // (Apps Script's ContentService can't set CORS response headers, so a real fetch can't read
+      // the response anyway — this is the proven-working pattern already in production for RSVP.)
+      fetch(GALLERY_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: item.file.name, mimeType: item.file.type, data: base64 })
+      }).catch(function() {});
+      if (item.url) URL.revokeObjectURL(item.url);
+      finishOne();
+    };
+    reader.onerror = function() {
+      if (item.url) URL.revokeObjectURL(item.url);
+      finishOne();
+    };
+    reader.readAsDataURL(item.file);
+  });
 }
 
 // ── RSVP deadline enforcement ──
