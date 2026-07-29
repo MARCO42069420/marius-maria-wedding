@@ -9,5 +9,6 @@ Thumbs.db
 *.log
 .idea/
 
-# Guest names in clear text — the site only ever ships the hashed digests
-seating/guests.local.json
+# Guest names in clear text (list + annotated venue plan) — the published site
+# only ever ships the hashed digests and the unlabelled floor plan
+seating/
