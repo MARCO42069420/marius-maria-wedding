@@ -24,7 +24,7 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 | `#story` | Our Story | Two-column: narrative text left, overlapping story photos right |
 | `#bigday` | The Big Day | Olive-green section — venue name (linked to Google Maps), schedule timeline, dress code |
 | `#rsvp` | RSVP | Live form — submits to Google Apps Script → Google Sheets |
-| `#gallery` | Photos (guest upload) | Teaser + upload form, gated to reveal at ceremony start (14:30, 30 July 2026); uploads go to Google Drive via a dedicated Apps Script |
+| `#gallery` | Photos (guest upload) | Upload form live now (made live 2026-07-29, not gated to ceremony start); uploads go to Google Drive via a dedicated Apps Script |
 | `#library` | Library / Book Gift | Suggests books instead of flowers; describes the book stand at the reception |
 | `#gift` | Wedding Gift | Bank transfer details (EN only — hidden in RO mode) |
 | `#stay` | Stay & Travel | Accommodation recommendations (Airbnb + 2 hotels), transport apps |
@@ -46,7 +46,7 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 - **Open Graph / Twitter Card** — og-invite.png (1200x630), full social sharing metadata
 - **Gift section** — EN only (hidden for RO speakers via JS); Revolut IBAN `LT63 3250 0304 0910 6958`, BIC `REVOLT21`
 - **Transport smart-links** — detects iOS/Android/desktop to open Bolt, Letz, Yandex Go in correct store
-- **Guest photo upload** — `#gallery` section, teaser until 14:30 on 30 July 2026, then a file picker that uploads directly to Google Drive via a second Apps Script (no Google account needed on the guest's side); see [[../workflows/add-photo-gallery]]
+- **Guest photo upload** — `#gallery` section, live now (made live 2026-07-29 by decision, not gated to ceremony start), a file picker that uploads directly to Google Drive via a second Apps Script (no Google account needed on the guest's side); see [[../workflows/add-photo-gallery]]
 
 ### RSVP Backend
 

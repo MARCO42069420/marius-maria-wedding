@@ -111,11 +111,11 @@ Also check drive.google.com storage settings for free space beforehand — free 
 
 ## How the reveal gating works
 
-`initGalleryReveal()` in `index.html` compares `now` against `new Date('2026-07-30T14:30:00')` (ceremony start). Before that moment: the `#gallery-teaser` block shows (with a day- or hour-precision countdown). At/after that moment: `#gallery-teaser` hides and `#gallery-active` (the real upload form) shows. Same technique as `initRSVPDeadline()` — plain `Date` math, `style.display` toggling, called once at script-load time.
+`initGalleryReveal()` in `index.html` compares `now` against a threshold `Date`. Before that moment: the `#gallery-teaser` block shows (with a day- or hour-precision countdown). At/after that moment: `#gallery-teaser` hides and `#gallery-active` (the real upload form) shows. Same technique as `initRSVPDeadline()` — plain `Date` math, `style.display` toggling, called once at script-load time.
 
-To change the reveal moment, edit the single `new Date('2026-07-30T14:30:00')` line — nothing else needs to change.
+To change the reveal moment, edit the single `new Date(...)` line — nothing else needs to change.
 
-⚠️ **As of 2026-07-29, this date has been temporarily set to a past date (`2026-07-27`) for live testing** — must be reverted to `2026-07-30T14:30:00` before the wedding, once testing is confirmed done.
+**Decision, 2026-07-29: gallery made live immediately, not gated to ceremony start.** The threshold is set to `2026-07-27T00:00:00` (already in the past), so the upload form is active now rather than waiting for 14:30 on 30 July — Marius's explicit call, not a leftover test artifact. The `#gallery-teaser` countdown code is still in place (harmless, just never reached while the threshold stays in the past) in case the reveal-later behavior is wanted for a future event reusing this feature.
 
 ## Upload pipeline (v2, 2026-07-29)
 

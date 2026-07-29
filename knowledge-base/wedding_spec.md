@@ -83,10 +83,10 @@ The live RSVP form collects:
 | | |
 |---|---|
 | **Section** | `#gallery`, positioned above `#rsvp` (RSVP hidden — deadline long passed) |
-| **Reveal moment** | 14:30, 30 July 2026 (ceremony start) — teaser shown before, upload form after |
+| **Reveal moment** | Live now — made live 2026-07-29 by decision, not gated to ceremony start |
 | **Method** | Google Apps Script → Google Drive (separate deployment from the RSVP script) |
 | **Target Drive folder** | `1JGyjT6_a6XeIq_ZfKbkiOnLOLbDiqPIK` |
-| **URL** | `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — needs redeploying with the updated `doGet` verification endpoint, see [[../workflows/add-photo-gallery]] |
+| **URL** | `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed, redesigned, and verified end-to-end 2026-07-29 |
 | **Why not a shared Drive link** | Native Drive folder-sharing and Google Forms file-upload both require the uploader to sign into a Google account — not configurable off. This design lets guests upload with no Google account at all. |
 | **File limit** | ~25MB per file, client- and server-side enforced |
 | **Multi-select** | Pick any number of photos/videos, preview with remove option, confirm once to upload the batch |
