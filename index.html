@@ -1000,7 +1000,16 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 
 <script>
 if (history.scrollRestoration) history.scrollRestoration = 'manual';
-window.addEventListener('load', () => window.scrollTo(0, 0));
+window.addEventListener('load', () => {
+  // Respect a direct #anchor link (QR codes, shared links) instead of always
+  // resetting to the top — re-scroll to the target *after* load so late-loading
+  // images (which shift layout) don't throw off the position.
+  if (window.location.hash) {
+    var target = document.querySelector(window.location.hash);
+    if (target) { target.scrollIntoView(); return; }
+  }
+  window.scrollTo(0, 0);
+});
 
 // Detect device and open correct app store
 function openStore(ios, android, fallback) {
