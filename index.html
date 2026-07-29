@@ -1662,7 +1662,6 @@ function retryRSVP() {
 // ── Gallery upload (multi-select, preview, confirm, sequential queue + real verification) ──
 var GALLERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec';
 var GALLERY_MAX_BYTES = 25 * 1024 * 1024; // 25MB client-side guard, matches server-side cap
-var GALLERY_MAX_RETRIES = 2; // per file, after the initial attempt
 var galleryPendingFiles = []; // { file, url, kind, status, storedName, el, badgeEl, removeBtnEl }
 
 function addGalleryFiles(fileList, kind) {
@@ -1778,7 +1777,7 @@ function runGalleryQueue(queue, doneCount, total) {
   updateGalleryOverallStatus(doneCount, total);
   if (queue.length === 0) return;
   var item = queue.shift();
-  uploadOneGalleryItem(item, 0, function() {
+  uploadOneGalleryItem(item, function() {
     runGalleryQueue(queue, doneCount + 1, total);
   });
 }
@@ -1811,7 +1810,12 @@ function cleanupGalleryDone() {
   renderGalleryPreview();
 }
 
-function uploadOneGalleryItem(item, attempt, cb) {
+// Uploads a file exactly once, ever, per call. Verification failures RE-CHECK,
+// they never trigger a silent re-upload — that was the root cause of files
+// landing in Drive multiple times (Drive's getFilesByName search index can lag
+// a few seconds behind a just-written file, so an early check reporting "not
+// found" did NOT mean the upload had actually failed).
+function uploadOneGalleryItem(item, cb) {
   item.status = 'uploading';
   setGalleryBadge(item, '⬆', 'gallery-badge-pending');
   if (!item.storedName) {
@@ -1826,7 +1830,8 @@ function uploadOneGalleryItem(item, attempt, cb) {
     // Fire and forget — same pattern as RSVP: a real (non-no-cors) fetch still can't
     // reliably read this response even avoiding preflight, since Apps Script's
     // ContentService can't set CORS response headers. Verification happens separately
-    // below via a plain GET, which *is* reliably readable.
+    // below via a plain GET, which *is* reliably readable. This fetch call happens
+    // exactly once — nothing below ever repeats it.
     fetch(GALLERY_SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
@@ -1834,30 +1839,40 @@ function uploadOneGalleryItem(item, attempt, cb) {
       body: JSON.stringify({ storedName: item.storedName, mimeType: item.file.type, data: base64 })
     }).catch(function() {});
 
-    setTimeout(function() { verifyGalleryUpload(item, attempt, cb); }, 2500);
+    setTimeout(function() { pollGalleryVerification(item, 0, cb); }, 3000);
   };
   reader.onerror = function() {
-    finishGalleryItem(item, attempt, cb, false);
+    finishGalleryItem(item, cb, false);
   };
   reader.readAsDataURL(item.file);
 }
 
-function verifyGalleryUpload(item, attempt, cb) {
+var GALLERY_VERIFY_POLLS = 3; // re-CHECKS, not re-uploads; increasing backoff between each
+
+function pollGalleryVerification(item, pollAttempt, cb) {
   fetch(GALLERY_SCRIPT_URL + '?check=' + encodeURIComponent(item.storedName))
     .then(function(r) { return r.json(); })
-    .then(function(res) { finishGalleryItem(item, attempt, cb, !!res.exists); })
-    .catch(function() { finishGalleryItem(item, attempt, cb, false); });
+    .then(function(res) { handleGalleryPollResult(item, pollAttempt, cb, !!res.exists); })
+    .catch(function() { handleGalleryPollResult(item, pollAttempt, cb, false); });
 }
 
-function finishGalleryItem(item, attempt, cb, success) {
+function handleGalleryPollResult(item, pollAttempt, cb, exists) {
+  if (exists) {
+    finishGalleryItem(item, cb, true);
+    return;
+  }
+  if (pollAttempt < GALLERY_VERIFY_POLLS) {
+    setTimeout(function() { pollGalleryVerification(item, pollAttempt + 1, cb); }, 2500 * (pollAttempt + 1));
+    return;
+  }
+  finishGalleryItem(item, cb, false);
+}
+
+function finishGalleryItem(item, cb, success) {
   if (success) {
     item.status = 'done';
     setGalleryBadge(item, '✓', 'gallery-badge-ok');
     cb();
-    return;
-  }
-  if (attempt < GALLERY_MAX_RETRIES) {
-    uploadOneGalleryItem(item, attempt + 1, cb);
     return;
   }
   item.status = 'failed';
@@ -1865,7 +1880,12 @@ function finishGalleryItem(item, attempt, cb, success) {
   if (item.badgeEl) {
     item.badgeEl.style.cursor = 'pointer';
     item.badgeEl.onclick = function() {
-      uploadOneGalleryItem(item, 0, function() {
+      // A manual, guest-initiated retry is the only thing that ever re-uploads.
+      // Fresh storedName so even if the original secretly succeeded, this can't
+      // silently overwrite/collide with it — worst case is one extra file, not
+      // the old systematic multiply-by-3 bug.
+      item.storedName = null;
+      uploadOneGalleryItem(item, function() {
         if (item.status === 'done') {
           setTimeout(cleanupGalleryDone, 1200);
           var stillFailed = galleryPendingFiles.filter(function(it) { return it.status === 'failed'; }).length;
