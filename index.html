@@ -428,7 +428,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
 .fp-round.is-match .fp-table{fill:var(--olive);stroke:var(--olive-dk);}
 .fp-round.is-match .fp-chair{stroke:var(--olive-dk);}
 .fp-round.is-match .fp-num,.fp-cluster.is-match .fp-head-label{fill:#fff;opacity:1;}
-.fp-chair.is-match{fill:var(--olive-dk);stroke:var(--olive-dk);r:6.4;}
+/* White rim so the marked chair reads on the ivory floor and on a lit table alike. */
+.fp-chair.is-match{fill:var(--olive-dk);stroke:#fff;stroke-width:1.6;r:6.4;}
 .fp-seat-ring{fill:none;stroke:var(--olive-dk);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:fpSeatPulse 2.2s ease-out infinite;}
 @keyframes fpSeatPulse{0%{opacity:0.65;transform:scale(0.6);}70%{opacity:0;transform:scale(1.5);}100%{opacity:0;transform:scale(1.5);}}
 .fp-cluster.is-match .fp-halo{opacity:0.16;animation:fpPulse 2.4s ease-in-out infinite;}
@@ -1466,9 +1467,12 @@ function fpClusterSVG(c) {
 function fpHeadSVG() {
   const h = FP_HEAD;
   const count = (FP_SEATS['Prezidium'] || [0])[0];
+  // Below the rectangle, facing the room — inside it the chairs would be
+  // swallowed by the table fill once the head table lights up.
+  const chairY = h.y + h.h + FP_CHAIR_GAP;
   const chairs = Array.from({ length: count }, (_, i) => {
     const x = h.x - h.w / 2 + (h.w / (count + 1)) * (i + 1);
-    return `<circle class="fp-chair" data-seat="${i}" cx="${x.toFixed(1)}" cy="${h.y + h.h / 2 + FP_CHAIR_GAP}" r="${FP_CHAIR_R}"/>`;
+    return `<circle class="fp-chair" data-seat="${i}" cx="${x.toFixed(1)}" cy="${chairY}" r="${FP_CHAIR_R}"/>`;
   }).join('');
   return `<g class="fp-cluster" data-table="Prezidium">` +
     `<title>Prezidium</title>` +

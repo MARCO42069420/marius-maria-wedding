@@ -32,7 +32,7 @@ const head = (plan['Prezidium'] || [[]])[0];
 body += `<rect class="t" x="${h.x - h.w / 2}" y="${h.y}" width="${h.w}" height="${h.h}" rx="20"/>`;
 head.forEach((name, i) => {
   const x = h.x - h.w / 2 + (h.w / (head.length + 1)) * (i + 1);
-  const y = h.y + h.h / 2 + FP_CHAIR_GAP;
+  const y = h.y + h.h + FP_CHAIR_GAP;
   body += `<circle class="c" cx="${x}" cy="${y}" r="${FP_CHAIR_R}"/>`
        +  `<text class="n" x="${x}" y="${y + 14}" text-anchor="middle">${i + 1}. ${esc(name)}</text>`;
 });
