@@ -57,12 +57,12 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 ### Gallery Upload Backend
 
 - **Target Drive folder**: `1JGyjT6_a6XeIq_ZfKbkiOnLOLbDiqPIK`
-- **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed 2026-07-28, redesigned 2026-07-29 for scale (~50 guests) — see [[../workflows/add-photo-gallery]]
+- **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed 2026-07-28, redesigned + redeployed + verified end-to-end 2026-07-29 — see [[../workflows/add-photo-gallery]]
 - Deliberately a **separate deployment** from the RSVP script (Rule #2 — never touch the working RSVP backend)
 - `doPost` payload: `storedName` (client-generated, collision-proof), `mimeType`, `data` (base64) — fire-and-forget `no-cors`, same limitation as RSVP (Apps Script can't set CORS response headers)
-- `doGet` (**new**): `?check=<storedName>` — real, reliably-readable verification (plain GET, no preflight) that a specific upload actually landed in Drive
-- Client uploads **one file at a time per device** (not parallel) to stay well under Apps Script's 30-simultaneous-execution cap when many guests upload at once; failed verification auto-retries twice before flagging that specific item to the guest
-- ⚠️ Apps Script needs redeploying with the updated code (adds `doGet`, renames `filename`→`storedName`) before this works — see workflow doc
+- `doGet`: `?check=<storedName>` — real, reliably-readable verification (plain GET, no preflight) that a specific upload actually landed in Drive; a failed check re-polls (never re-uploads), only a guest's manual tap on a failed badge triggers a real retry
+- Client uploads **2 files concurrently per device** (`GALLERY_CONCURRENCY`) to balance throughput against Apps Script's 30-simultaneous-execution cap shared across every guest uploading at once
+- **Known performance ceiling** — 6 photos take ~70-80s; researched 2026-07-29 whether a faster architecture exists (direct-to-Drive resumable upload, serverless proxy). Decided to keep Apps Script as-is given the wedding's timing — see [[../workflows/add-photo-gallery]] "Performance ceiling" section for the full reasoning and the documented future upgrade path if ever revisited
 
 ---
 

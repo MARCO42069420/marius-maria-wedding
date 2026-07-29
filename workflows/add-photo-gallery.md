@@ -16,12 +16,22 @@ Native Google Drive folder-sharing and Google Forms' file-upload question both *
 
 **This is a separate, independent Apps Script deployment from the RSVP one** — per `AGENT.md` Rule #2, the working RSVP backend is never touched by this feature.
 
-## Scale considerations (added 2026-07-29)
+## Scale considerations (added 2026-07-29, updated same day)
 
-Google Apps Script Web Apps cap out at **30 simultaneous executions per deploying account, 1,000 per script** (2026 quotas, same for free and paid accounts) — this is a real, hittable ceiling with ~50 guests uploading in a burst right after the ceremony. Two design choices address this directly:
+Google Apps Script Web Apps cap out at **30 simultaneous executions per deploying account, 1,000 per script** (2026 quotas, same for free and paid accounts) — this is a real, hittable ceiling with ~50 guests uploading in a burst right after the ceremony. Current design:
 
-1. **Client processes one file at a time per device** (`runGalleryQueue` in `index.html`) — a guest picking 10 photos does NOT fire 10 simultaneous requests; they queue and upload sequentially. This keeps any single device's contribution to the shared 30-slot pool to at most 1.
-2. **Real per-file verification with automatic retry** — a transient rejection (e.g. hitting the concurrency cap) self-heals via retry rather than silently failing.
+1. **Client processes up to 2 files at a time per device** (`runGalleryQueuePool` in `index.html`, `GALLERY_CONCURRENCY = 2`) — a guest picking 10 photos does not fire 10 simultaneous requests, but does run 2 concurrently rather than strictly 1-at-a-time (see the Performance Ceiling section below for why it's not higher).
+2. **Real per-file verification** (`doGet` check) — a failed check re-polls (up to 4 times, flat 2s interval), it never silently re-uploads. Only an explicit guest tap on a failed (✕) badge triggers an actual new upload attempt.
+
+## Performance ceiling (researched 2026-07-29)
+
+Real-world test: 6 photos took ~70-80 seconds even after the concurrency/polling tuning above — this prompted researching whether a fundamentally faster architecture exists before spending more time tuning parameters. Two things were investigated and are worth knowing before attempting this again:
+
+**A cleaner "direct-to-Drive" upload was considered and ruled out.** The idea: have the Apps Script initiate a Drive API resumable-upload session and hand the browser only the session URI, letting the browser PUT bytes straight to Google — bypassing Apps Script as a relay entirely, and (in theory) getting synchronous success confirmation instead of the polling-based verification this feature currently uses. This pattern genuinely works for **Google Cloud Storage** (Google's own docs confirm a bare session URI is a valid, anonymous, write-only credential there) — but **not for Google Drive**. The only real reference implementation for Drive (tanaikech's `ResumableUploadForGoogleDrive_js`) requires handing the browser the site owner's live OAuth **bearer token** on every request, not just a URI. That would mean every guest's browser holds a working credential for Marius's Google account for the life of the token (~1 hour) — inspectable via devtools, usable for anything that token's scope permits, not just uploading one file. **This is a real security regression from the current design and was rejected for that reason**, not attempted.
+
+**Apps Script's latency is a known ceiling, not a misconfiguration.** Multi-second-per-file latency for `doPost` (base64 decode + `DriveApp.createFile`) is widely reported as expected for this specific mechanism — Apps Script has real cold-start overhead, and base64 itself inflates payload size ~33%. Production tools that solve "anonymous upload to my cloud storage" at speed (wedding-photo-sharing apps, general upload widgets) almost universally use S3-compatible object storage (S3, Cloudflare R2) with presigned upload URLs — a mechanism Drive doesn't offer for anonymous writers, which is exactly why this project ended up with the Apps Script relay workaround in the first place.
+
+**If this needs to be meaningfully faster in the future** (e.g. reusing this feature for another event, with more runway than "the day before the wedding"): the architecturally correct upgrade is a small serverless proxy function (e.g. a Cloudflare Worker, free tier) holding a real Drive API **service account** — never exposed to the browser — that mediates the upload and returns a synchronous, CORS-clean JSON response. This would eliminate both the base64 overhead and the polling/verification mechanism entirely, and is more secure than the resumable-token approach above (credentials never leave the server side). It requires: a Cloudflare account, a Google Cloud service account with access to the target Drive folder, and writing/deploying/testing a new function — real new infrastructure, not a tuning change. **Decided against attempting this before the wedding** given the risk of untested new infrastructure breaking on the day; documented here so a future, non-time-pressured session doesn't have to re-research this from scratch.
 
 ## Inputs required
 
