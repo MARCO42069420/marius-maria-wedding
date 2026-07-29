@@ -358,6 +358,13 @@ section{padding:90px 24px;}
 .error-msg button{padding:12px 28px;background:var(--olive);border:none;color:white;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.3s;}
 .error-msg button:hover{background:var(--olive-dk);}
 
+/* ── GALLERY (guest photo uploads) ── */
+.gallery-card{max-width:560px;margin:28px auto 0;text-align:center;background:var(--rsvp-card);border:1px solid rgba(107,122,78,0.28);border-top:3px solid var(--olive);padding:36px 32px;box-shadow:0 4px 32px rgba(107,122,78,0.10);backdrop-filter:blur(8px);}
+.gallery-countdown{margin-top:16px;padding:9px 22px;border:1px solid rgba(107,122,78,0.4);font-size:10px;letter-spacing:0.2em;color:var(--olive-dk);text-transform:uppercase;background:rgba(255,255,255,0.5);display:inline-block;}
+.gallery-btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;min-height:48px;background:var(--olive);color:white;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;cursor:pointer;transition:background 0.3s;margin:4px;}
+.gallery-btn:hover{background:var(--olive-dk);}
+.gallery-status{margin-top:14px;font-size:12px;color:var(--text-mid);min-height:16px;}
+
 /* ── BEAUTY ── */
 #beauty{background:var(--parchment);}
 .beauty-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:44px;}
@@ -518,7 +525,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#home" onclick="closeDrawer()">Home</a>
   <a href="#story" onclick="closeDrawer()">Our Story</a>
   <a href="#bigday" onclick="closeDrawer()">The Big Day</a>
-  <a href="#rsvp" onclick="closeDrawer()">RSVP</a>
+  <a href="#gallery" onclick="closeDrawer()">Photos</a>
+  <a href="#rsvp" onclick="closeDrawer()" style="display:none;">RSVP</a>
   <a href="#seating" onclick="closeDrawer()">Find Your Seat</a>
   <a href="#library" onclick="closeDrawer()">Library</a>
   <a href="#stay" onclick="closeDrawer()">Stay &amp; Travel</a>
@@ -541,7 +549,8 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   <a href="#home"    data-nav-en="Home"             data-nav-ro="Acasă">Home</a>
   <a href="#story"   data-nav-en="Our Story"         data-nav-ro="Povestea">Our Story</a>
   <a href="#bigday"  data-nav-en="The Big Day"       data-nav-ro="Ziua Mare">The Big Day</a>
-  <a href="#rsvp"     data-nav-en="RSVP"              data-nav-ro="Confirmare">RSVP</a>
+  <a href="#gallery" data-nav-en="Photos"            data-nav-ro="Poze">Photos</a>
+  <a href="#rsvp"     data-nav-en="RSVP"              data-nav-ro="Confirmare" style="display:none;">RSVP</a>
   <a href="#seating"  data-nav-en="Find Your Seat"    data-nav-ro="Găsește-ți Locul">Find Your Seat</a>
   <a href="#library" data-nav-en="Library"           data-nav-ro="Bibliotecă">Library</a>
   <a href="#stay"    data-nav-en="Stay &amp; Travel" data-nav-ro="Cazare">Stay &amp; Travel</a>
@@ -694,8 +703,59 @@ footer p{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.12em;}
   </div>
 </section>
 
+<!-- ══ GALLERY (guest photo upload) ══ -->
+<section id="gallery" style="background:var(--parchment);">
+  <div class="section-inner reveal" style="text-align:center;">
+    <span class="section-eyebrow" data-lang="en">Share the Moment</span>
+    <span class="section-eyebrow" data-lang="ro">Împărtășiți Momentul</span>
+    <h2 class="section-title" data-lang="en">Wedding-Day <em>Photos</em></h2>
+    <h2 class="section-title" data-lang="ro">Poze de la <em>Nuntă</em></h2>
+
+    <div class="gallery-card">
+      <!-- In-app browser warning — some apps' embedded browser blocks the photo/camera picker entirely -->
+      <div id="gallery-inapp-warning" class="gallery-countdown" style="display:none;margin-bottom:16px;">
+        <span data-lang="en">Uploads may not work inside this app's browser — tap ⋮ or Share, then "Open in Chrome/Safari".</span>
+        <span data-lang="ro">Încărcarea poate să nu funcționeze în browserul acestei aplicații — apăsați ⋮ sau Distribuire, apoi „Deschide în Chrome/Safari".</span>
+      </div>
+      <!-- Teaser — shown before the ceremony starts -->
+      <div id="gallery-teaser">
+        <p class="section-body" style="margin:0 auto;" data-lang="en">Photo uploads unlock at the ceremony — save your favourite shots and share them here on the day!</p>
+        <p class="section-body" style="margin:0 auto;" data-lang="ro">Încărcarea pozelor se deschide la ceremonie — păstrați-vă cele mai reușite poze și încărcați-le aici în ziua nunții!</p>
+        <div class="gallery-countdown" id="gallery-countdown">
+          <span data-lang="en" id="gallery-countdown-en"></span>
+          <span data-lang="ro" id="gallery-countdown-ro"></span>
+        </div>
+      </div>
+
+      <!-- Active upload form — shown from 14:30 on 30 July 2026 -->
+      <div id="gallery-active" style="display:none;">
+        <p class="section-body" style="margin:0 auto 18px;" data-lang="en">Photos and short video clips please — very large videos may not upload successfully.</p>
+        <p class="section-body" style="margin:0 auto 18px;" data-lang="ro">Vă rugăm poze și clipuri video scurte — videoclipurile foarte mari s-ar putea să nu se încarce.</p>
+        <input type="file" id="galleryPhotoInput" accept="image/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <input type="file" id="galleryVideoInput" accept="video/*" style="display:none;" onchange="uploadGalleryFile(this)">
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="en">Choose Photo ↗</label>
+        <label for="galleryPhotoInput" class="gallery-btn" data-lang="ro">Alege Poză ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="en">Choose Video ↗</label>
+        <label for="galleryVideoInput" class="gallery-btn" data-lang="ro">Alege Video ↗</label>
+        <div class="gallery-status" id="galleryUploadStatus"></div>
+        <div class="success-msg" id="gallerySuccessMsg">
+          <p data-lang="en">Uploaded! Thank you for sharing. ♡</p>
+          <p data-lang="ro">Încărcat! Mulțumim că ați împărtășit. ♡</p>
+        </div>
+        <div class="error-msg" id="galleryErrorMsg">
+          <p data-lang="en">Upload failed.</p>
+          <p data-lang="ro">Încărcarea a eșuat.</p>
+          <small data-lang="en">Please check your connection and try again.</small>
+          <small data-lang="ro">Verificați conexiunea și încercați din nou.</small>
+          <button onclick="document.getElementById('galleryErrorMsg').classList.remove('show')">Try Again / Încearcă Din Nou</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ══ RSVP ══ -->
-<section id="rsvp">
+<section id="rsvp" style="display:none;">
   <div class="section-inner reveal">
     <span class="section-eyebrow" data-lang="en">You're Invited</span>
     <span class="section-eyebrow" data-lang="ro">Ești Invitat</span>
@@ -1052,8 +1112,8 @@ function setLang(lang) {
   const ni = document.getElementById('nameInput');
   if (ni) ni.placeholder = lang === 'en' ? 'e.g. Maria Tulgara, Marius Onofrei' : 'ex. Maria Tulgara, Marius Onofrei';
   const labels = {
-    en: ['Home','Our Story','The Big Day','RSVP','Find Your Seat','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
-    ro: ['Acasă','Povestea Noastră','Ziua Mare','Confirmare','Găsește-ți Locul','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
+    en: ['Home','Our Story','The Big Day','Photos','RSVP','Find Your Seat','Library','Stay & Travel','Beauty','Discover Moldova','Gift','Bars & Restaurants'],
+    ro: ['Acasă','Povestea Noastră','Ziua Mare','Poze','Confirmare','Găsește-ți Locul','Bibliotecă','Cazare & Călătorie','Frumusețe','Descoperă Moldova','Cadou','Baruri & Restaurante']
   };
   document.querySelectorAll('.nav-drawer a').forEach((a, i) => {
     if (labels[lang][i]) a.textContent = labels[lang][i];
@@ -1577,6 +1637,51 @@ function retryRSVP() {
   document.getElementById('errorMsg').classList.remove('show');
 }
 
+// ── Gallery upload ──
+var GALLERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec';
+var GALLERY_MAX_BYTES = 25 * 1024 * 1024; // 25MB client-side guard, matches server-side cap
+
+function uploadGalleryFile(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  document.getElementById('galleryErrorMsg').classList.remove('show');
+  document.getElementById('gallerySuccessMsg').classList.remove('show');
+
+  if (file.size > GALLERY_MAX_BYTES) {
+    document.getElementById('galleryUploadStatus').textContent =
+      currentLang === 'en' ? 'File too large — please choose a smaller photo or shorter clip.'
+                            : 'Fișier prea mare — alegeți o poză mai mică sau un clip mai scurt.';
+    input.value = '';
+    return;
+  }
+
+  document.getElementById('galleryUploadStatus').textContent =
+    currentLang === 'en' ? 'Uploading…' : 'Se încarcă…';
+
+  var reader = new FileReader();
+  reader.onload = function() {
+    var base64 = reader.result.split(',')[1];
+    // Fire and forget — same pattern as RSVP: no-cors response is opaque, can't be read either way.
+    // (Apps Script's ContentService can't set CORS response headers, so a real fetch can't read
+    // the response anyway — this is the proven-working pattern already in production for RSVP.)
+    fetch(GALLERY_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, mimeType: file.type, data: base64 })
+    }).catch(function() {});
+
+    document.getElementById('galleryUploadStatus').textContent = '';
+    document.getElementById('gallerySuccessMsg').classList.add('show');
+  };
+  reader.onerror = function() {
+    document.getElementById('galleryUploadStatus').textContent = '';
+    document.getElementById('galleryErrorMsg').classList.add('show');
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // allow re-selecting the same file later
+}
+
 // ── RSVP deadline enforcement ──
 function initRSVPDeadline() {
   var deadline = new Date('2026-07-11T00:00:00'); // soft close — form stays open 10 days past displayed deadline
@@ -1606,6 +1711,56 @@ function initRSVPDeadline() {
   }
 }
 initRSVPDeadline();
+
+// ── Gallery reveal — unlocks at ceremony start, 14:30 on 30 July 2026 ──
+function initGalleryReveal() {
+  var reveal = new Date('2026-07-27T00:00:00'); // TEMP for live testing — revert to 2026-07-30T14:30:00 after
+  var now = new Date();
+  var isLive = now >= reveal;
+  document.getElementById('gallery-teaser').style.display = isLive ? 'none' : 'block';
+  document.getElementById('gallery-active').style.display = isLive ? 'block' : 'none';
+
+  if (!isLive) {
+    var msLeft = reveal - now;
+    var enText, roText;
+    var sameDay = now.getFullYear() === reveal.getFullYear() && now.getMonth() === reveal.getMonth() && now.getDate() === reveal.getDate();
+    if (sameDay) {
+      var hoursLeft = Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60)));
+      enText = 'Photos unlock in ' + hoursLeft + (hoursLeft === 1 ? ' hour' : ' hours');
+      roText = 'Pozele se deblochează în ' + hoursLeft + (hoursLeft === 1 ? ' oră' : ' ore');
+    } else {
+      var daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      enText = 'Photos unlock in ' + daysLeft + (daysLeft === 1 ? ' day' : ' days');
+      roText = 'Pozele se deblochează în ' + daysLeft + (daysLeft === 1 ? ' zi' : ' zile');
+    }
+    document.getElementById('gallery-countdown-en').textContent = enText;
+    document.getElementById('gallery-countdown-ro').textContent = roText;
+    // Apply current lang visibility (setLang already ran, so re-apply)
+    document.querySelectorAll('#gallery-countdown [data-lang]').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.lang === currentLang);
+    });
+  }
+}
+initGalleryReveal();
+
+// ── In-app browser detection ──
+// Apps like Google app (GSA), Facebook, Instagram, WeChat, Line, TikTok, Snapchat
+// embed their own WebView which frequently blocks the native file/camera picker
+// entirely — this is a platform limitation, not fixable from the page itself.
+// Detect it and point the guest at their real browser instead.
+function checkInAppBrowser() {
+  var ua = navigator.userAgent || '';
+  var isInApp = /FBAN|FBAV|Instagram|Line\/|GSA\/|MicroMessenger|TikTok|Snapchat/i.test(ua);
+  var el = document.getElementById('gallery-inapp-warning');
+  if (!el) return;
+  el.style.display = isInApp ? 'block' : 'none';
+  if (isInApp) {
+    document.querySelectorAll('#gallery-inapp-warning [data-lang]').forEach(function(e) {
+      e.classList.toggle('active', e.dataset.lang === currentLang);
+    });
+  }
+}
+checkInAppBrowser();
 </script>
 </body>
 </html>

@@ -24,6 +24,7 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 | `#story` | Our Story | Two-column: narrative text left, overlapping story photos right |
 | `#bigday` | The Big Day | Olive-green section — venue name (linked to Google Maps), schedule timeline, dress code |
 | `#rsvp` | RSVP | Live form — submits to Google Apps Script → Google Sheets |
+| `#gallery` | Photos (guest upload) | Teaser + upload form, gated to reveal at ceremony start (14:30, 30 July 2026); uploads go to Google Drive via a dedicated Apps Script |
 | `#library` | Library / Book Gift | Suggests books instead of flowers; describes the book stand at the reception |
 | `#gift` | Wedding Gift | Bank transfer details (EN only — hidden in RO mode) |
 | `#stay` | Stay & Travel | Accommodation recommendations (Airbnb + 2 hotels), transport apps |
@@ -45,12 +46,21 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 - **Open Graph / Twitter Card** — og-invite.png (1200x630), full social sharing metadata
 - **Gift section** — EN only (hidden for RO speakers via JS); Revolut IBAN `LT63 3250 0304 0910 6958`, BIC `REVOLT21`
 - **Transport smart-links** — detects iOS/Android/desktop to open Bolt, Letz, Yandex Go in correct store
+- **Guest photo upload** — `#gallery` section, teaser until 14:30 on 30 July 2026, then a file picker that uploads directly to Google Drive via a second Apps Script (no Google account needed on the guest's side); see [[../workflows/add-photo-gallery]]
 
 ### RSVP Backend
 
 - **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbyKws6Tqx5AcghaKd5k79AyrkLgTphuep8xLTDheXgY2vwmyvVmu8w969NoZRmGPc_E/exec`
 - Payload fields: `name`, `attendance`, `dietary`, `transport`, `zeama`
 - No auth, no error handling on the response (opaque no-cors); success is always shown
+
+### Gallery Upload Backend
+
+- **Target Drive folder**: `1JGyjT6_a6XeIq_ZfKbkiOnLOLbDiqPIK`
+- **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed and verified 2026-07-28 (real browser test uploaded a file that landed correctly in the Drive folder)
+- Deliberately a **separate deployment** from the RSVP script (Rule #2 — never touch the working RSVP backend)
+- Payload fields: `filename`, `mimeType`, `data` (base64)
+- **Fire-and-forget, `no-cors`** — same pattern as RSVP, not real success/error feedback. Apps Script's `ContentService` can't set CORS response headers, so a real (non-`no-cors`) fetch can't reliably read the response anyway; matches the limitation already noted in the RSVP code
 
 ---
 
@@ -62,7 +72,6 @@ Natural next features, in rough priority order:
 |---|---|
 | RSVP dashboard | Read responses from Google Sheets; show headcount, dietary breakdown, transport split, zeama count |
 | Guest list manager | CSV/Sheets list of invited guests; track who has and hasn't responded |
-| Photo gallery section | Add `#gallery` section for pre/post wedding photos; lazy-loaded grid |
 | Countdown widget | Days/hours/minutes to 30 July 2026; replace or augment the static date pill |
 | Seating plan | Interactive table assignments; could be a separate page or section |
 | Post-wedding thank-you page | Redirect or new section after the wedding date passes |

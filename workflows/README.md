@@ -10,11 +10,11 @@ SOPs for multi-step tasks on the **Marius & Maria** wedding site. Read the relev
 
 ---
 
-## Active Workflows (none yet — add as they are built)
+## Active Workflows
 
 | Workflow | When to use |
 |---|---|
-| *(empty)* | *(add entries as workflows are written)* |
+| [[add-photo-gallery]] | Deploying/redeploying the guest photo-upload Apps Script, or changing the reveal time |
 
 ---
 
@@ -41,8 +41,7 @@ When a task has a clear repeatable sequence:
 | `deploy-change.md` | Verifying and pushing a change to GitHub Pages |
 | `read-rsvp-responses.md` | Pulling RSVP data from Google Sheets to produce a headcount report |
 | `update-content.md` | Updating venue details, times, or recommendations in the live site |
-| `add-photo-gallery.md` | Full SOP for building the photo gallery section |
-| `post-wedding-transition.md` | What to do after 30 July — disable RSVP, add gallery, thank-you message |
+| `post-wedding-transition.md` | What to do after 30 July — disable RSVP, thank-you message |
 
 ---
 
