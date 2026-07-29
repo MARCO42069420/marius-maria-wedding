@@ -7,3 +7,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+.idea/
+
+# Guest names in clear text (list + annotated venue plan) — the published site
+# only ever ships the hashed digests and the unlabelled floor plan
+seating/
