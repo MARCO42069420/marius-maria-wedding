@@ -370,6 +370,10 @@ section{padding:90px 24px;}
 .gallery-preview-video{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--sage-lt);font-size:22px;gap:2px;}
 .gallery-preview-video span{font-size:8px;color:var(--olive-dk);padding:0 4px;text-align:center;line-height:1.2;word-break:break-all;max-height:24px;overflow:hidden;}
 .gallery-preview-remove{position:absolute;top:3px;right:3px;width:22px;height:22px;background:rgba(46,46,30,0.72);color:white;border:none;border-radius:50%;font-size:12px;line-height:22px;cursor:pointer;padding:0;min-width:22px;}
+.gallery-preview-badge{position:absolute;inset:0;align-items:center;justify-content:center;font-size:26px;background:rgba(255,255,255,0.55);}
+.gallery-badge-pending{color:var(--olive-dk);}
+.gallery-badge-ok{color:#2d6a2d;}
+.gallery-badge-fail{color:#8b2020;}
 
 /* ── BEAUTY ── */
 #beauty{background:var(--parchment);}
@@ -1655,27 +1659,41 @@ function retryRSVP() {
   document.getElementById('errorMsg').classList.remove('show');
 }
 
-// ── Gallery upload (multi-select, preview, confirm) ──
+// ── Gallery upload (multi-select, preview, confirm, sequential queue + real verification) ──
 var GALLERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec';
 var GALLERY_MAX_BYTES = 25 * 1024 * 1024; // 25MB client-side guard, matches server-side cap
-var galleryPendingFiles = []; // { file, url, kind: 'image'|'video' }
+var GALLERY_MAX_RETRIES = 2; // per file, after the initial attempt
+var galleryPendingFiles = []; // { file, url, kind, status, storedName, el, badgeEl, removeBtnEl }
 
 function addGalleryFiles(fileList, kind) {
   for (var i = 0; i < fileList.length; i++) {
     var file = fileList[i];
     var url = kind === 'image' ? URL.createObjectURL(file) : null;
-    galleryPendingFiles.push({ file: file, url: url, kind: kind });
+    galleryPendingFiles.push({ file: file, url: url, kind: kind, status: 'pending' });
   }
   renderGalleryPreview();
 }
 
 function removeGalleryFile(index) {
   var item = galleryPendingFiles[index];
+  if (item.status !== 'pending') return; // can't remove once queued/uploading/done
   if (item.url) URL.revokeObjectURL(item.url);
   galleryPendingFiles.splice(index, 1);
   renderGalleryPreview();
 }
 
+function sanitizeGalleryFilename(name) {
+  return (name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+}
+
+function galleryRandomToken() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+// Rebuilds the preview grid DOM. Only called when the pending set changes shape
+// (add/remove/cleanup) — per-item status updates during upload go through
+// setGalleryBadge() directly against the stored element refs, no full re-render,
+// so thumbnails don't flicker while a queue is mid-flight.
 function renderGalleryPreview() {
   var grid = document.getElementById('galleryPreviewGrid');
   grid.innerHTML = '';
@@ -1695,29 +1713,46 @@ function renderGalleryPreview() {
       v.appendChild(nameSpan);
       el.appendChild(v);
     }
+
+    var badge = document.createElement('div');
+    badge.className = 'gallery-preview-badge';
+    badge.style.display = 'none';
+    el.appendChild(badge);
+    item.badgeEl = badge;
+
     var rm = document.createElement('button');
     rm.type = 'button';
     rm.className = 'gallery-preview-remove';
     rm.textContent = '✕';
     rm.setAttribute('aria-label', 'Remove');
     rm.onclick = function() { removeGalleryFile(i); };
+    item.removeBtnEl = rm;
     el.appendChild(rm);
+
     grid.appendChild(el);
+    item.el = el;
   });
 
-  var n = galleryPendingFiles.length;
-  document.getElementById('galleryConfirmWrap').style.display = n > 0 ? 'block' : 'none';
-  if (n > 0) {
-    document.getElementById('galleryConfirmBtnEn').textContent = 'Upload ' + n + (n === 1 ? ' item ↗' : ' items ↗');
-    document.getElementById('galleryConfirmBtnRo').textContent = 'Încarcă ' + n + (n === 1 ? ' element ↗' : ' elemente ↗');
+  var pendingCount = galleryPendingFiles.filter(function(it) { return it.status === 'pending'; }).length;
+  document.getElementById('galleryConfirmWrap').style.display = pendingCount > 0 ? 'block' : 'none';
+  if (pendingCount > 0) {
+    document.getElementById('galleryConfirmBtnEn').textContent = 'Upload ' + pendingCount + (pendingCount === 1 ? ' item ↗' : ' items ↗');
+    document.getElementById('galleryConfirmBtnRo').textContent = 'Încarcă ' + pendingCount + (pendingCount === 1 ? ' element ↗' : ' elemente ↗');
   }
 }
 
-function confirmGalleryUpload() {
-  if (galleryPendingFiles.length === 0) return;
-  document.getElementById('gallerySuccessMsg').classList.remove('show');
+function setGalleryBadge(item, text, cls) {
+  if (!item.badgeEl) return;
+  item.badgeEl.textContent = text;
+  item.badgeEl.className = 'gallery-preview-badge ' + (cls || '');
+  item.badgeEl.style.display = 'flex';
+}
 
-  var oversized = galleryPendingFiles.filter(function(item) { return item.file.size > GALLERY_MAX_BYTES; });
+function confirmGalleryUpload() {
+  var toUpload = galleryPendingFiles.filter(function(it) { return it.status === 'pending'; });
+  if (toUpload.length === 0) return;
+
+  var oversized = toUpload.filter(function(item) { return item.file.size > GALLERY_MAX_BYTES; });
   if (oversized.length > 0) {
     document.getElementById('galleryUploadStatus').textContent =
       currentLang === 'en' ? oversized.length + ' file(s) too large — remove them or choose smaller ones.'
@@ -1725,45 +1760,121 @@ function confirmGalleryUpload() {
     return;
   }
 
-  var toUpload = galleryPendingFiles.slice();
-  var total = toUpload.length;
-  galleryPendingFiles = [];
-  renderGalleryPreview();
+  document.getElementById('gallerySuccessMsg').classList.remove('show');
+  document.getElementById('galleryConfirmWrap').style.display = 'none';
+  toUpload.forEach(function(item) {
+    item.status = 'queued';
+    if (item.removeBtnEl) item.removeBtnEl.style.display = 'none';
+    setGalleryBadge(item, '⏳', 'gallery-badge-pending');
+  });
 
-  document.getElementById('galleryUploadStatus').textContent =
-    (currentLang === 'en' ? 'Uploading ' + total + ' item(s)…' : 'Se încarcă ' + total + ' element(e)…');
+  // Sequential, one file in flight at a time per device — this is the important part
+  // for scale: with 30 simultaneous Apps Script executions shared across every guest
+  // uploading at once, no single device should be contributing more than 1 at a time.
+  runGalleryQueue(toUpload.slice(), 0, toUpload.length);
+}
 
-  var doneCount = 0;
-  function finishOne() {
-    doneCount++;
-    if (doneCount === total) {
-      document.getElementById('galleryUploadStatus').textContent = '';
+function runGalleryQueue(queue, doneCount, total) {
+  updateGalleryOverallStatus(doneCount, total);
+  if (queue.length === 0) return;
+  var item = queue.shift();
+  uploadOneGalleryItem(item, 0, function() {
+    runGalleryQueue(queue, doneCount + 1, total);
+  });
+}
+
+function updateGalleryOverallStatus(doneCount, total) {
+  var el = document.getElementById('galleryUploadStatus');
+  if (doneCount >= total) {
+    var failedCount = galleryPendingFiles.filter(function(it) { return it.status === 'failed'; }).length;
+    if (failedCount > 0) {
+      el.textContent = currentLang === 'en'
+        ? (total - failedCount) + '/' + total + ' uploaded — ' + failedCount + ' failed, tap ✕ to retry'
+        : (total - failedCount) + '/' + total + ' încărcate — ' + failedCount + ' eșuate, apăsați ✕ pentru reîncercare';
+    } else {
+      el.textContent = '';
       document.getElementById('gallerySuccessMsg').classList.add('show');
     }
+    setTimeout(cleanupGalleryDone, 1800); // clears succeeded thumbnails, leaves failed ones for retry
+  } else {
+    el.textContent = currentLang === 'en'
+      ? 'Uploading ' + (doneCount + 1) + '/' + total + '…'
+      : 'Se încarcă ' + (doneCount + 1) + '/' + total + '…';
+  }
+}
+
+function cleanupGalleryDone() {
+  galleryPendingFiles = galleryPendingFiles.filter(function(it) {
+    if (it.status === 'done') { if (it.url) URL.revokeObjectURL(it.url); return false; }
+    return true;
+  });
+  renderGalleryPreview();
+}
+
+function uploadOneGalleryItem(item, attempt, cb) {
+  item.status = 'uploading';
+  setGalleryBadge(item, '⬆', 'gallery-badge-pending');
+  if (!item.storedName) {
+    // Client-generated, collision-proof name (many phones share filenames like IMG_0001.jpg) —
+    // also the exact key used by the verification check below.
+    item.storedName = Date.now() + '_' + galleryRandomToken() + '_' + sanitizeGalleryFilename(item.file.name);
   }
 
-  toUpload.forEach(function(item) {
-    var reader = new FileReader();
-    reader.onload = function() {
-      var base64 = reader.result.split(',')[1];
-      // Fire and forget — same pattern as RSVP: no-cors response is opaque, can't be read either way.
-      // (Apps Script's ContentService can't set CORS response headers, so a real fetch can't read
-      // the response anyway — this is the proven-working pattern already in production for RSVP.)
-      fetch(GALLERY_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: item.file.name, mimeType: item.file.type, data: base64 })
-      }).catch(function() {});
-      if (item.url) URL.revokeObjectURL(item.url);
-      finishOne();
+  var reader = new FileReader();
+  reader.onload = function() {
+    var base64 = reader.result.split(',')[1];
+    // Fire and forget — same pattern as RSVP: a real (non-no-cors) fetch still can't
+    // reliably read this response even avoiding preflight, since Apps Script's
+    // ContentService can't set CORS response headers. Verification happens separately
+    // below via a plain GET, which *is* reliably readable.
+    fetch(GALLERY_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storedName: item.storedName, mimeType: item.file.type, data: base64 })
+    }).catch(function() {});
+
+    setTimeout(function() { verifyGalleryUpload(item, attempt, cb); }, 2500);
+  };
+  reader.onerror = function() {
+    finishGalleryItem(item, attempt, cb, false);
+  };
+  reader.readAsDataURL(item.file);
+}
+
+function verifyGalleryUpload(item, attempt, cb) {
+  fetch(GALLERY_SCRIPT_URL + '?check=' + encodeURIComponent(item.storedName))
+    .then(function(r) { return r.json(); })
+    .then(function(res) { finishGalleryItem(item, attempt, cb, !!res.exists); })
+    .catch(function() { finishGalleryItem(item, attempt, cb, false); });
+}
+
+function finishGalleryItem(item, attempt, cb, success) {
+  if (success) {
+    item.status = 'done';
+    setGalleryBadge(item, '✓', 'gallery-badge-ok');
+    cb();
+    return;
+  }
+  if (attempt < GALLERY_MAX_RETRIES) {
+    uploadOneGalleryItem(item, attempt + 1, cb);
+    return;
+  }
+  item.status = 'failed';
+  setGalleryBadge(item, '✕', 'gallery-badge-fail');
+  if (item.badgeEl) {
+    item.badgeEl.style.cursor = 'pointer';
+    item.badgeEl.onclick = function() {
+      uploadOneGalleryItem(item, 0, function() {
+        if (item.status === 'done') {
+          setTimeout(cleanupGalleryDone, 1200);
+          var stillFailed = galleryPendingFiles.filter(function(it) { return it.status === 'failed'; }).length;
+          if (stillFailed === 0) document.getElementById('galleryUploadStatus').textContent = '';
+        }
+      });
     };
-    reader.onerror = function() {
-      if (item.url) URL.revokeObjectURL(item.url);
-      finishOne();
-    };
-    reader.readAsDataURL(item.file);
-  });
+  }
+  cb();
 }
 
 // ── RSVP deadline enforcement ──

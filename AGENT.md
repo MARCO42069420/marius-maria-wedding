@@ -57,10 +57,12 @@ The site is a **single-file PWA** (`index.html`) — all HTML, CSS, and JavaScri
 ### Gallery Upload Backend
 
 - **Target Drive folder**: `1JGyjT6_a6XeIq_ZfKbkiOnLOLbDiqPIK`
-- **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed and verified 2026-07-28 (real browser test uploaded a file that landed correctly in the Drive folder)
+- **Google Apps Script URL**: `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed 2026-07-28, redesigned 2026-07-29 for scale (~50 guests) — see [[../workflows/add-photo-gallery]]
 - Deliberately a **separate deployment** from the RSVP script (Rule #2 — never touch the working RSVP backend)
-- Payload fields: `filename`, `mimeType`, `data` (base64)
-- **Fire-and-forget, `no-cors`** — same pattern as RSVP, not real success/error feedback. Apps Script's `ContentService` can't set CORS response headers, so a real (non-`no-cors`) fetch can't reliably read the response anyway; matches the limitation already noted in the RSVP code
+- `doPost` payload: `storedName` (client-generated, collision-proof), `mimeType`, `data` (base64) — fire-and-forget `no-cors`, same limitation as RSVP (Apps Script can't set CORS response headers)
+- `doGet` (**new**): `?check=<storedName>` — real, reliably-readable verification (plain GET, no preflight) that a specific upload actually landed in Drive
+- Client uploads **one file at a time per device** (not parallel) to stay well under Apps Script's 30-simultaneous-execution cap when many guests upload at once; failed verification auto-retries twice before flagging that specific item to the guest
+- ⚠️ Apps Script needs redeploying with the updated code (adds `doGet`, renames `filename`→`storedName`) before this works — see workflow doc
 
 ---
 

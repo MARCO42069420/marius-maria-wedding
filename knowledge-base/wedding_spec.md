@@ -78,18 +78,20 @@ The live RSVP form collects:
 
 ---
 
-## Guest Photo Gallery (built 2026-07-28)
+## Guest Photo Gallery (built 2026-07-28, redesigned 2026-07-29 for scale)
 
 | | |
 |---|---|
-| **Section** | `#gallery`, positioned right after `#rsvp` |
+| **Section** | `#gallery`, positioned above `#rsvp` (RSVP hidden — deadline long passed) |
 | **Reveal moment** | 14:30, 30 July 2026 (ceremony start) — teaser shown before, upload form after |
 | **Method** | Google Apps Script → Google Drive (separate deployment from the RSVP script) |
 | **Target Drive folder** | `1JGyjT6_a6XeIq_ZfKbkiOnLOLbDiqPIK` |
-| **URL** | `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — deployed and verified 2026-07-28 |
+| **URL** | `https://script.google.com/macros/s/AKfycbx0_SLQaOk9pJIK8JsyZg71_LYXK1-Hrdn6pgthCoEu6J-CLmeS7w1AZDlWlwotIEklxQ/exec` — needs redeploying with the updated `doGet` verification endpoint, see [[../workflows/add-photo-gallery]] |
 | **Why not a shared Drive link** | Native Drive folder-sharing and Google Forms file-upload both require the uploader to sign into a Google account — not configurable off. This design lets guests upload with no Google account at all. |
 | **File limit** | ~25MB per file, client- and server-side enforced |
-| **Feedback mode** | Fire-and-forget (`no-cors`), same as RSVP — optimistic "Uploaded!" message, not a guaranteed server confirmation |
+| **Multi-select** | Pick any number of photos/videos, preview with remove option, confirm once to upload the batch |
+| **Feedback mode** | Real per-file confirmation via a separate `doGet` verification check (not the opaque `no-cors` POST response) — ✓/✕ badge per thumbnail, auto-retries twice on failure |
+| **Concurrency handling** | One file in flight per device at a time, to stay under Apps Script's 30-simultaneous-execution cap when many guests upload at once (~50 expected) |
 
 ---
 
