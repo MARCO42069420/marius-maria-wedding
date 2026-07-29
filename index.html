@@ -1899,10 +1899,18 @@ function finishGalleryItem(item, cb, success) {
   if (item.badgeEl) {
     item.badgeEl.style.cursor = 'pointer';
     item.badgeEl.onclick = function() {
-      // A manual, guest-initiated retry is the only thing that ever re-uploads.
-      // Fresh storedName so even if the original secretly succeeded, this can't
-      // silently overwrite/collide with it — worst case is one extra file, not
-      // the old systematic multiply-by-3 bug.
+      // Guard against rapid double/triple-tapping (very common when a guest sees
+      // "failed" and impatiently taps a few times): disable the handler the
+      // instant it fires, so repeat taps during the retry's own in-flight upload
+      // can't each independently fire ANOTHER full re-upload with yet another
+      // fresh storedName. This was the actual cause of a single photo landing in
+      // Drive 3 times while the UI still showed "failed" — three overlapping
+      // retry attempts stomping on the same item's shared state at once.
+      item.badgeEl.onclick = null;
+      item.badgeEl.style.cursor = 'default';
+      // Fresh storedName so even if a previous attempt secretly succeeded, this
+      // can't silently collide with it — worst case is one extra file, not a
+      // systematic multiply bug.
       item.storedName = null;
       uploadOneGalleryItem(item, function() {
         if (item.status === 'done') {
