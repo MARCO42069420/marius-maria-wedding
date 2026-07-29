@@ -1767,19 +1767,33 @@ function confirmGalleryUpload() {
     setGalleryBadge(item, '⏳', 'gallery-badge-pending');
   });
 
-  // Sequential, one file in flight at a time per device — this is the important part
-  // for scale: with 30 simultaneous Apps Script executions shared across every guest
-  // uploading at once, no single device should be contributing more than 1 at a time.
-  runGalleryQueue(toUpload.slice(), 0, toUpload.length);
+  // Small worker pool per device (GALLERY_CONCURRENCY in flight at once), not
+  // strictly sequential — each individual upload/verify Apps Script execution is
+  // brief (well under a second typically), so 1-at-a-time was leaving real
+  // throughput on the table without meaningfully protecting the shared 30-slot
+  // cap. 2 concurrent per device roughly halves wall-clock time for a guest's
+  // own batch while staying modest if many guests overlap at once.
+  runGalleryQueuePool(toUpload.slice(), toUpload.length);
 }
 
-function runGalleryQueue(queue, doneCount, total) {
-  updateGalleryOverallStatus(doneCount, total);
-  if (queue.length === 0) return;
-  var item = queue.shift();
-  uploadOneGalleryItem(item, function() {
-    runGalleryQueue(queue, doneCount + 1, total);
-  });
+var GALLERY_CONCURRENCY = 2;
+
+function runGalleryQueuePool(itemsLeft, total) {
+  var doneCount = 0;
+  updateGalleryOverallStatus(0, total);
+
+  function launchNext() {
+    if (itemsLeft.length === 0) return;
+    var item = itemsLeft.shift();
+    uploadOneGalleryItem(item, function() {
+      doneCount++;
+      updateGalleryOverallStatus(doneCount, total);
+      launchNext(); // keep exactly GALLERY_CONCURRENCY workers busy
+    });
+  }
+
+  var startCount = Math.min(GALLERY_CONCURRENCY, itemsLeft.length);
+  for (var i = 0; i < startCount; i++) launchNext();
 }
 
 function updateGalleryOverallStatus(doneCount, total) {
@@ -1796,9 +1810,11 @@ function updateGalleryOverallStatus(doneCount, total) {
     }
     setTimeout(cleanupGalleryDone, 1800); // clears succeeded thumbnails, leaves failed ones for retry
   } else {
+    // Several items may be in flight at once now, so this is a running count,
+    // not "currently processing item N" the way it was with strict sequencing.
     el.textContent = currentLang === 'en'
-      ? 'Uploading ' + (doneCount + 1) + '/' + total + '…'
-      : 'Se încarcă ' + (doneCount + 1) + '/' + total + '…';
+      ? doneCount + '/' + total + ' uploaded…'
+      : doneCount + '/' + total + ' încărcate…';
   }
 }
 
@@ -1839,7 +1855,7 @@ function uploadOneGalleryItem(item, cb) {
       body: JSON.stringify({ storedName: item.storedName, mimeType: item.file.type, data: base64 })
     }).catch(function() {});
 
-    setTimeout(function() { pollGalleryVerification(item, 0, cb); }, 3000);
+    setTimeout(function() { pollGalleryVerification(item, 0, cb); }, 2000);
   };
   reader.onerror = function() {
     finishGalleryItem(item, cb, false);
@@ -1847,7 +1863,10 @@ function uploadOneGalleryItem(item, cb) {
   reader.readAsDataURL(item.file);
 }
 
-var GALLERY_VERIFY_POLLS = 3; // re-CHECKS, not re-uploads; increasing backoff between each
+var GALLERY_VERIFY_POLLS = 3; // re-CHECKS, not re-uploads
+var GALLERY_VERIFY_INTERVAL_MS = 2000; // flat interval — this is "wait for Drive's index to
+  // catch up", not a rate-limit scenario, so a steady interval clears faster than escalating
+  // backoff for the same number of attempts
 
 function pollGalleryVerification(item, pollAttempt, cb) {
   fetch(GALLERY_SCRIPT_URL + '?check=' + encodeURIComponent(item.storedName))
@@ -1862,7 +1881,7 @@ function handleGalleryPollResult(item, pollAttempt, cb, exists) {
     return;
   }
   if (pollAttempt < GALLERY_VERIFY_POLLS) {
-    setTimeout(function() { pollGalleryVerification(item, pollAttempt + 1, cb); }, 2500 * (pollAttempt + 1));
+    setTimeout(function() { pollGalleryVerification(item, pollAttempt + 1, cb); }, GALLERY_VERIFY_INTERVAL_MS);
     return;
   }
   finishGalleryItem(item, cb, false);
